@@ -1,0 +1,91 @@
+/* Layout copied from the Myriapod 800 reference: an integer-scaled 160x192 wide-pixel screen in a bezel,
+   centered on a dark dot-grid with a faded rainbow band behind it; touch controls below (portrait) or beside (landscape). */
+:root{
+  --void:#0b0910; --void-2:#161220; --bezel:#1c1726; --bezel-2:#14111c; --edge:#2f2842;
+  --ink:#ddd3ec; --dim:#7a6f90; --fire:#d8442a; --fire-deep:#7a1d10; --fire-ink:#ffe8d4;
+  --r1:#d8442a; --r2:#ea7a2a; --r3:#efb43a; --r4:#6fae3d; --r5:#3a7fd0; --r6:#8a4fc4;
+  --font-ui:'Silkscreen', 'Courier New', ui-monospace, monospace;
+  color-scheme:dark;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); box-sizing:border-box;
+}
+html,body{height:100%}
+body{
+  margin:0; overflow:hidden; color:var(--ink); font-family:var(--font-ui);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.035) 1px, transparent 1.6px) 0 0/6px 6px,
+    radial-gradient(ellipse 80% 70% at 50% 45%, var(--void-2) 0%, var(--void) 72%);
+  background-color:var(--void);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  box-sizing:border-box;
+  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;
+}
+#stage{
+  position:relative; height:100%; box-sizing:border-box; padding-block:12px;
+  display:grid; grid-template-areas:"screen" "hint"; grid-template-rows:minmax(0,1fr) auto; grid-template-columns:minmax(0,1fr);
+  gap:10px; touch-action:none;
+}
+.band{
+  position:absolute; left:calc(-1 * max(16px, env(safe-area-inset-left, 0px))); right:calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  height:36px; top:60%; pointer-events:none; opacity:.17; z-index:0;
+  background:linear-gradient(to bottom,var(--r1) 0 16.66%,var(--r2) 16.66% 33.33%,var(--r3) 33.33% 50%,var(--r4) 50% 66.66%,var(--r5) 66.66% 83.33%,var(--r6) 83.33%);
+}
+#screenCell{grid-area:screen; position:relative; z-index:1; min-width:0; min-height:0; display:grid; place-items:center; overflow:hidden}
+.bezel{
+  display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:8px;
+  background:linear-gradient(var(--bezel),var(--bezel-2)); border:1px solid var(--edge);
+  box-shadow:0 24px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05);
+}
+/* The canvas is 160 wide but shown 320 wide: that stretch is what makes the Atari wide pixels. */
+canvas{display:block; width:320px; height:192px; image-rendering:pixelated; image-rendering:crisp-edges; background:#000; border-radius:2px}
+.plate{display:flex; justify-content:space-between; align-items:center; gap:12px; height:14px; font-size:10px; letter-spacing:.14em; color:var(--dim); white-space:nowrap; overflow:hidden}
+.plate .name{color:var(--ink); font-weight:700; display:flex; align-items:center; gap:8px}
+.mark{display:inline-flex; gap:2px; transform:skewX(-20deg)}
+.mark i{display:block; width:3px; height:10px}
+.mark i:nth-child(1){background:var(--r1)} .mark i:nth-child(2){background:var(--r2)} .mark i:nth-child(3){background:var(--r3)}
+.hint{grid-area:hint; margin:0; text-align:center; font-size:10px; letter-spacing:.14em; color:var(--dim); line-height:1.8; position:relative; z-index:1}
+.hint b{color:var(--ink); font-weight:400}
+
+/* touch controls */
+#ctl{display:none}
+body.touch .hint{display:none}
+body.touch #ctl{display:flex}
+/* On phones every pixel of width counts: the scale only steps in whole device pixels, so a little
+   padding can drop it a whole step. Strip the side gutters and the bezel and let the screen fill. */
+body.touch{padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px)}
+body.touch #stage{padding-block:0}
+body.touch .bezel{padding:0; border:0; border-radius:0; background:none; box-shadow:none}
+body.touch .plate{display:none}
+body.touch canvas{border-radius:0}
+.col{display:flex; flex-direction:column; align-items:center; gap:14px}
+#pad{
+  width:var(--pad); height:var(--pad); border-radius:50%; position:relative; touch-action:none;
+  background:radial-gradient(circle, var(--bezel) 0 54%, var(--bezel-2) 55%);
+  border:2px solid var(--edge); box-shadow:inset 0 0 0 6px var(--bezel-2), 0 10px 28px rgba(0,0,0,.5);
+}
+#pad::before,#pad::after{content:""; position:absolute; background:var(--edge); left:50%; top:50%}
+#pad::before{width:2px; height:76%; transform:translate(-50%,-50%)}
+#pad::after{height:2px; width:76%; transform:translate(-50%,-50%)}
+#knob{
+  position:absolute; left:28%; top:28%; width:44%; height:44%; border-radius:50%; z-index:1;
+  background:radial-gradient(circle at 40% 35%, #3d3352, #221c2e); border:2px solid #4a4062;
+  box-shadow:0 6px 14px rgba(0,0,0,.5);
+}
+#actBtn{
+  width:var(--fireSz); height:var(--fireSz); border-radius:50%; border:0; touch-action:none; cursor:pointer;
+  background:radial-gradient(circle at 40% 35%, #f06a4c, var(--fire) 68%);
+  box-shadow:0 6px 0 var(--fire-deep), 0 12px 26px rgba(0,0,0,.5);
+  font:700 13px var(--font-ui); letter-spacing:.14em; color:var(--fire-ink);
+}
+#actBtn.on{transform:translateY(4px); box-shadow:0 2px 0 var(--fire-deep), 0 6px 14px rgba(0,0,0,.5)}
+button:focus-visible{outline:2px solid var(--r3); outline-offset:3px}
+
+body.touch.portrait #stage{grid-template-areas:"screen" "ctl"; --pad:clamp(110px,36vw,170px); --fireSz:clamp(84px,27vw,124px)}
+body.touch.portrait #ctl{grid-area:ctl; justify-content:space-between; align-items:center; width:100%; max-width:540px; justify-self:center; padding:0 16px 12px; box-sizing:border-box}
+body.touch.landscape #stage{
+  grid-template-areas:"pad screen fire"; grid-template-columns:auto minmax(0,1fr) auto; grid-template-rows:minmax(0,1fr);
+  --pad:clamp(96px,34vh,160px); --fireSz:clamp(74px,26vh,118px); column-gap:14px;
+}
+body.touch.landscape #ctl{display:contents}
+body.touch.landscape #leftCol{grid-area:pad; align-self:center; position:relative; z-index:1; padding-left:12px}
+body.touch.landscape #rightCol{grid-area:fire; align-self:center; position:relative; z-index:1; padding-right:12px}

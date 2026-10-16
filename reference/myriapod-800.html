@@ -1,0 +1,469 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Myriapod 800</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap">
+<style>
+/* Layout: one-screen arcade cabinet. Integer-scaled 160x192 wide-pixel screen in a bezel, centered on a dark
+   dot-grid with a faded rainbow band behind it; touch controls below (portrait) or beside (landscape). */
+:root{
+  --void:#0b0910; --void-2:#161220; --bezel:#1c1726; --bezel-2:#14111c; --edge:#2f2842;
+  --ink:#ddd3ec; --dim:#7a6f90; --fire:#d8442a; --fire-deep:#7a1d10; --fire-ink:#ffe8d4;
+  --r1:#d8442a; --r2:#ea7a2a; --r3:#efb43a; --r4:#6fae3d; --r5:#3a7fd0; --r6:#8a4fc4;
+  --font-ui:'Silkscreen', 'Courier New', ui-monospace, monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  margin:0; overflow:hidden; color:var(--ink); font-family:var(--font-ui);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.035) 1px, transparent 1.6px) 0 0/6px 6px,
+    radial-gradient(ellipse 80% 70% at 50% 45%, var(--void-2) 0%, var(--void) 72%);
+  background-color:var(--void);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  box-sizing:border-box;
+  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;
+}
+#stage{
+  position:relative; height:100%; box-sizing:border-box; padding-block:12px;
+  display:grid; grid-template-areas:"screen" "hint"; grid-template-rows:minmax(0,1fr) auto; grid-template-columns:minmax(0,1fr);
+  gap:10px; touch-action:none;
+}
+.band{
+  position:absolute; left:calc(-1 * max(16px, env(safe-area-inset-left, 0px))); right:calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  height:36px; top:60%; pointer-events:none; opacity:.17; z-index:0;
+  background:linear-gradient(to bottom,var(--r1) 0 16.66%,var(--r2) 16.66% 33.33%,var(--r3) 33.33% 50%,var(--r4) 50% 66.66%,var(--r5) 66.66% 83.33%,var(--r6) 83.33%);
+}
+#screenCell{grid-area:screen; position:relative; z-index:1; min-width:0; min-height:0; display:grid; place-items:center; overflow:hidden}
+.bezel{
+  display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:8px;
+  background:linear-gradient(var(--bezel),var(--bezel-2)); border:1px solid var(--edge);
+  box-shadow:0 24px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05);
+}
+canvas{display:block; width:320px; height:192px; image-rendering:pixelated; image-rendering:crisp-edges; background:#000; border-radius:2px}
+.plate{display:flex; justify-content:space-between; align-items:center; gap:12px; height:14px; font-size:10px; letter-spacing:.14em; color:var(--dim); white-space:nowrap; overflow:hidden}
+.plate .name{color:var(--ink); font-weight:700; display:flex; align-items:center; gap:8px}
+.mark{display:inline-flex; gap:2px; transform:skewX(-20deg)}
+.mark i{display:block; width:3px; height:10px}
+.mark i:nth-child(1){background:var(--r1)} .mark i:nth-child(2){background:var(--r2)} .mark i:nth-child(3){background:var(--r3)}
+.hint{grid-area:hint; margin:0; text-align:center; font-size:10px; letter-spacing:.14em; color:var(--dim); line-height:1.8; position:relative; z-index:1}
+.hint b{color:var(--ink); font-weight:400}
+
+/* touch controls */
+#ctl{display:none}
+body.touch .hint{display:none}
+body.touch #ctl{display:flex}
+.col{display:flex; flex-direction:column; align-items:center; gap:14px}
+#pad{
+  width:var(--pad); height:var(--pad); border-radius:50%; position:relative; touch-action:none;
+  background:radial-gradient(circle, var(--bezel) 0 54%, var(--bezel-2) 55%);
+  border:2px solid var(--edge); box-shadow:inset 0 0 0 6px var(--bezel-2), 0 10px 28px rgba(0,0,0,.5);
+}
+#pad::before,#pad::after{content:""; position:absolute; background:var(--edge); left:50%; top:50%}
+#pad::before{width:2px; height:76%; transform:translate(-50%,-50%)}
+#pad::after{height:2px; width:76%; transform:translate(-50%,-50%)}
+#knob{
+  position:absolute; left:28%; top:28%; width:44%; height:44%; border-radius:50%; z-index:1;
+  background:radial-gradient(circle at 40% 35%, #3d3352, #221c2e); border:2px solid #4a4062;
+  box-shadow:0 6px 14px rgba(0,0,0,.5);
+}
+#fireBtn{
+  width:var(--fireSz); height:var(--fireSz); border-radius:50%; border:0; touch-action:none; cursor:pointer;
+  background:radial-gradient(circle at 40% 35%, #f06a4c, var(--fire) 68%);
+  box-shadow:0 6px 0 var(--fire-deep), 0 12px 26px rgba(0,0,0,.5);
+  font:700 13px var(--font-ui); letter-spacing:.14em; color:var(--fire-ink);
+}
+#fireBtn.on{transform:translateY(4px); box-shadow:0 2px 0 var(--fire-deep), 0 6px 14px rgba(0,0,0,.5)}
+.mini{
+  font:400 10px var(--font-ui); letter-spacing:.12em; color:var(--dim); background:transparent;
+  border:1px solid var(--edge); border-radius:4px; padding:7px 10px; cursor:pointer; touch-action:manipulation;
+}
+button:focus-visible{outline:2px solid var(--r3); outline-offset:3px}
+
+body.touch.portrait #stage{grid-template-areas:"screen" "ctl"; --pad:clamp(110px,36vw,170px); --fireSz:clamp(84px,27vw,124px)}
+body.touch.portrait #ctl{grid-area:ctl; justify-content:space-between; align-items:center; width:100%; max-width:540px; justify-self:center; padding-bottom:6px}
+body.touch.landscape #stage{
+  grid-template-areas:"pad screen fire"; grid-template-columns:auto minmax(0,1fr) auto; grid-template-rows:minmax(0,1fr);
+  --pad:clamp(96px,34vh,160px); --fireSz:clamp(74px,26vh,118px); column-gap:14px;
+}
+body.touch.landscape #ctl{display:contents}
+body.touch.landscape #leftCol{grid-area:pad; align-self:center; position:relative; z-index:1}
+body.touch.landscape #rightCol{grid-area:fire; align-self:center; position:relative; z-index:1}
+</style>
+
+<div id="stage">
+  <div class="band" id="band" aria-hidden="true"></div>
+  <div id="screenCell">
+    <div class="bezel" id="bezel">
+      <canvas id="screen" width="160" height="192" aria-label="Myriapod game screen"></canvas>
+      <div class="plate"><span class="name"><span class="mark"><i></i><i></i><i></i></span>MYRIAPOD</span><span>ANTIC MODE E · 160×192</span></div>
+    </div>
+  </div>
+  <p class="hint" id="hint"><b>ARROWS / WASD</b> MOVE &nbsp;·&nbsp; <b>SPACE</b> FIRE &nbsp;·&nbsp; <b>P</b> PAUSE &nbsp;·&nbsp; <b>M</b> SOUND</p>
+  <div id="ctl">
+    <div class="col" id="leftCol"><div id="pad" aria-label="Movement joystick"><div id="knob"></div></div><button class="mini" id="pauseBtn" type="button">PAUSE</button></div>
+    <div class="col" id="rightCol"><button id="fireBtn" type="button" aria-label="Fire">FIRE</button><button class="mini" id="soundBtn" type="button">SOUND ON</button></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const W=160,H=192,COLS=40,ROWS=24,PZ=18,CELLS=COLS*ROWS;
+const $=id=>document.getElementById(id);
+const cv=$('screen'),ctx=cv.getContext('2d');
+const rnd=n=>Math.floor(Math.random()*n);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const ov=(ax,ay,aw,ah,bx,by,bw,bh)=>ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
+const pad6=n=>String(n).padStart(6,'0');
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- sprites (4 logical px per cell, each logical px is 2:1 wide like GRAPHICS 15) ---------- */
+function spr(rows){const p=[];rows.forEach((r,y)=>{for(let x=0;x<r.length;x++)if(r[x]==='X')p.push(x,y)});return{p,w:rows[0].length,h:rows.length}}
+const mirror=rows=>rows.map(r=>r.split('').reverse().join(''));
+function draw(s,x,y,col){ctx.fillStyle=col;x=Math.round(x);y=Math.round(y);const p=s.p;for(let i=0;i<p.length;i+=2)ctx.fillRect(x+p[i],y+p[i+1],1,1)}
+
+const MROWS=['.XX.','XXXX','XXXX','.XX.','.XX.','.XX.'];
+const HPROWS=[0,2,3,4,6];
+const MUSH=[null];
+for(let h=1;h<=4;h++){const n=HPROWS[h];MUSH.push({cap:spr(MROWS.slice(0,Math.min(n,3))),stem:n>3?spr(MROWS.slice(3,n)):null})}
+const SEG_A=spr(['X..X','.XX.','XXXX','XXXX','.XX.','X..X']);
+const SEG_B=spr(['.XX.','XXXX','XXXX','XXXX','XXXX','.XX.']);
+const PLAYER=spr(['.XX.','.XX.','XXXX','XXXX','X..X']);
+const SPIDER=[spr(['X......X','.X.XX.X.','..XXXX..','XXXXXXXX','..XXXX..','.X....X.']),
+              spr(['.X....X.','X..XX..X','..XXXX..','XXXXXXXX','..XXXX..','X......X'])];
+const FLEA=spr(['..X.','.XXX','XXXX','XXX.','.X.X','X...']);
+const SCR=['......XX','.....X.X','XX..X...','XXXXXX..','.XXXXX..','X.X.X...'];
+const SCORP_R=spr(mirror(SCR)),SCORP_L=spr(SCR);
+
+/* ---------- 3x5 font ---------- */
+const FONT={'0':[7,5,5,5,7],'1':[2,6,2,2,7],'2':[7,1,7,4,7],'3':[7,1,3,1,7],'4':[5,5,7,1,1],'5':[7,4,7,1,7],'6':[7,4,7,5,7],'7':[7,1,1,2,2],'8':[7,5,7,5,7],'9':[7,5,7,1,7],
+A:[2,5,7,5,5],B:[6,5,6,5,6],C:[3,4,4,4,3],D:[6,5,5,5,6],E:[7,4,6,4,7],F:[7,4,6,4,4],G:[3,4,5,5,3],H:[5,5,7,5,5],I:[7,2,2,2,7],J:[1,1,1,5,2],K:[5,5,6,5,5],L:[4,4,4,4,7],M:[5,7,7,5,5],
+N:[6,5,5,5,5],O:[2,5,5,5,2],P:[6,5,6,4,4],Q:[2,5,5,6,3],R:[6,5,6,5,5],S:[3,4,2,1,6],T:[7,2,2,2,2],U:[5,5,5,5,7],V:[5,5,5,5,2],W:[5,5,7,7,5],X:[5,5,2,5,5],Y:[5,5,2,2,2],Z:[7,1,2,4,7],
+' ':[0,0,0,0,0],'-':[0,0,7,0,0],'.':[0,0,0,0,2],':':[0,2,0,2,0],'!':[2,2,2,0,2],'/':[1,1,2,4,4]};
+function text(str,x,y,col,sx=1,sy=sx){ctx.fillStyle=col;str=String(str).toUpperCase();for(let i=0;i<str.length;i++){const g=FONT[str[i]];if(!g)continue;for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(g[r]&(4>>c))ctx.fillRect(x+(i*4+c)*sx,y+r*sy,sx,sy)}}
+const tw=(s,sx=1)=>(String(s).length*4-1)*sx;
+const ctext=(s,y,col,sx=1,sy=sx)=>text(s,Math.round((W-tw(s,sx))/2),y,col,sx,sy);
+
+/* ---------- palettes: [mushroom, stem, centipede, head, poison] — shifts every wave ---------- */
+const PALS=[
+ ['#e0682c','#f4b070','#5cc84c','#d8f870','#e848a0'],
+ ['#3c74e8','#8cb4ff','#f09434','#ffd47c','#e84848'],
+ ['#c044c4','#ec9cee','#3cc4cc','#b0faff','#f0d040'],
+ ['#44ac44','#98e090','#ec4c4c','#ffa8a0','#a060f0'],
+ ['#e4c034','#f8e88c','#9858ec','#d4b0ff','#48d0e0'],
+ ['#30b8a4','#90e8d8','#ec6cb0','#ffbce0','#f08030'],
+ ['#ec4848','#f8a0a0','#ece048','#fffcc8','#50d050'],
+ ['#9898f0','#d0d0ff','#e08834','#ffc884','#ec48a0']];
+const PLAYER_C='#f2ead2',SHOT_C='#ffffff',SPIDER_C=['#e8e8f8','#f080c0'],FLEA_C='#f8d058',SCORP_C='#50dcf0';
+const pal=()=>{const p=PALS[wave%PALS.length];return{mush:p[0],stem:p[1],cent:p[2],head:p[3],poison:p[4]}};
+
+/* ---------- sound: square-wave blips in the spirit of POKEY ---------- */
+let ac=null,master=null,noiseBuf=null,muted=store.get('myriapod800.mute')==='1';
+function audioInit(){
+  if(ac){if(ac.state==='suspended')ac.resume().catch(()=>{});return}
+  try{
+    ac=new (window.AudioContext||window.webkitAudioContext)();
+    master=ac.createGain();master.gain.value=.35;master.connect(ac.destination);
+    noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=noiseBuf.getChannelData(0);let v=0;
+    for(let i=0;i<d.length;i++){if(i%6===0)v=Math.random()*2-1;d[i]=v}
+  }catch(e){ac=null}
+}
+function tone(type,f1,f2,dur,vol,delay=0){
+  if(!ac||muted)return;const t=ac.currentTime+delay;const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.setValueAtTime(f1,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.02);
+}
+function noise(dur,vol){
+  if(!ac||muted)return;const t=ac.currentTime;const s=ac.createBufferSource();s.buffer=noiseBuf;
+  const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(160,t+dur);
+  const g=ac.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(master);s.start(t);s.stop(t+dur);
+}
+const sfx={
+  shoot:()=>tone('square',1500,520,.05,.045),
+  chip:()=>tone('square',320,180,.03,.035),
+  hit:()=>{tone('square',640,90,.09,.07);noise(.08,.08)},
+  march:f=>tone('triangle',f?150:112,0,.05,.13),
+  spider:()=>tone('square',480+Math.random()*320,0,.035,.022),
+  flea:()=>tone('square',1300,140,.7,.03),
+  scorp:()=>tone('square',220,0,.03,.02),
+  bonus:()=>tone('square',300,1400,.18,.06),
+  die:()=>{noise(.9,.35);tone('sawtooth',320,40,.9,.07)},
+  restore:()=>tone('square',880,0,.03,.04),
+  arp:notes=>notes.forEach((n,i)=>tone('square',n,0,.09,.05,i*.08)),
+};
+
+/* ---------- state ---------- */
+let state='title',frame=0,score=0,hi=+(store.get('myriapod800.hi')||0),lives=3,wave=0,nextLife=12000;
+const hp=new Uint8Array(CELLS),poison=new Uint8Array(CELLS);
+let segs=[],px=78,py=180,bullet=null,spider=null,flea=null,scorp=null,pops=[],parts=[];
+let ct=0,legFrame=0,marchFlip=0,spiderTimer=200,headTimer=600,dieT=0,restoreList=[],restoreT=0,overT=0,carry=12;
+
+function seedMushrooms(){hp.fill(0);poison.fill(0);let n=0;while(n<36){const i=(2+rnd(ROWS-3))*COLS+rnd(COLS);if(hp[i])continue;hp[i]=4;n++}}
+function clearStart(){for(let r=21;r<ROWS;r++)for(let c=17;c<23;c++){hp[r*COLS+c]=0;poison[r*COLS+c]=0}}
+function spawnCentipede(n){
+  segs=[];const dir=(wave%2)?1:-1;let prev=null;
+  for(let i=0;i<n;i++){const s={c:dir<0?20+i:19-i,r:1,dir,vdir:1,dive:false,lead:prev};segs.push(s);prev=s}
+  ct=0;headTimer=600;
+}
+const interval=()=>Math.max(2,4-Math.floor(wave/3));
+function addScore(n){score+=n;if(score>=nextLife){lives++;nextLife+=12000;sfx.arp([523,659,784,1047])}if(score>hi){hi=score}}
+function burst(x,y,col,n=8,spd=1.2){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*2*spd,vy:(Math.random()-.5)*2*spd,t:10+rnd(14),col})}
+function pop(x,y,s,t=45){pops.push({x,y,s:String(s),t})}
+
+function startGame(){
+  score=0;lives=3;wave=0;nextLife=12000;seedMushrooms();clearStart();spawnCentipede(12);
+  px=78;py=180;bullet=spider=flea=scorp=null;pops=[];parts=[];spiderTimer=200;state='play';
+  pop(null,84,'WAVE 1',90);sfx.arp([392,523,659]);
+}
+
+/* ---------- centipede ---------- */
+function stepSeg(s){
+  if(s.dive){s.r++;if(s.r>=ROWS-1){s.r=ROWS-1;s.dive=false;s.vdir=-1;s.dir=-s.dir}return}
+  const nc=s.c+s.dir;const inside=nc>=0&&nc<COLS;const i=s.r*COLS+nc;
+  if(inside&&!hp[i]){s.c=nc;return}
+  if(inside&&hp[i]&&poison[i]&&s.r<ROWS-1){s.dive=true;s.r++;return}
+  let nr=s.r+s.vdir;
+  if(nr>=ROWS){s.vdir=-1;nr=s.r-1}else if(s.vdir<0&&nr<PZ){s.vdir=1;nr=s.r+1}
+  s.r=nr;s.dir=-s.dir;
+}
+function updateCentipede(){
+  if(++ct>=interval()){ct=0;for(const s of segs)stepSeg(s);legFrame^=1;marchFlip^=1;if(segs.length)sfx.march(marchFlip)}
+  if(segs.some(s=>s.r>=PZ)&&--headTimer<=0){
+    headTimer=Math.max(240,600-wave*40);
+    if(segs.length<24){const left=Math.random()<.5;segs.push({c:left?0:COLS-1,r:PZ,dir:left?1:-1,vdir:1,dive:false,lead:null})}
+  }
+}
+function killSeg(s){
+  const head=!s.lead;segs.splice(segs.indexOf(s),1);for(const o of segs)if(o.lead===s)o.lead=null;
+  addScore(head?100:10);const i=s.r*COLS+s.c;if(s.r>0&&!hp[i]){hp[i]=4;poison[i]=0}
+  burst(s.c*4+2,s.r*8+4,pal().cent);sfx.hit();
+}
+
+/* ---------- enemies ---------- */
+function updateSpider(){
+  if(!spider){if(--spiderTimer<=0){const left=Math.random()<.5;spider={x:left?-8:W,y:120+Math.random()*60,dir:left?1:-1,vy:(Math.random()<.5?-1:1)*1.3,mode:0,mt:40,f:0}}return}
+  const s=spider;s.f++;
+  if(--s.mt<=0){s.mode=Math.random()<.35?1:0;s.mt=20+rnd(50);if(Math.random()<.5)s.vy=-s.vy}
+  if(s.mode===0)s.x+=s.dir*Math.min(1.3,.7+wave*.08);
+  s.y+=s.vy;if(s.y<112){s.y=112;s.vy=Math.abs(s.vy)}if(s.y>H-6){s.y=H-6;s.vy=-Math.abs(s.vy)}
+  const c=Math.floor((s.x+4)/4),r=Math.floor((s.y+3)/8);
+  if(c>=0&&c<COLS&&r>=1&&r<ROWS){const i=r*COLS+c;if(hp[i]&&Math.random()<.05){hp[i]=0;poison[i]=0}}
+  if(s.f%6===0)sfx.spider();
+  if((s.dir>0&&s.x>W+2)||(s.dir<0&&s.x<-10)){spider=null;spiderTimer=120+rnd(240)}
+}
+function updateFlea(){
+  if(!flea){
+    if(wave>=1&&frame%30===0){let n=0;for(let i=PZ*COLS;i<CELLS;i++)if(hp[i])n++;if(n<5&&Math.random()<.18){flea={x:rnd(COLS)*4,y:8,vy:2,hp:2,lr:-1};sfx.flea()}}
+    return;
+  }
+  flea.y+=flea.vy;const r=Math.floor((flea.y+3)/8);
+  if(r!==flea.lr){flea.lr=r;if(r>=1&&r<ROWS-1){const i=r*COLS+(flea.x>>2);if(!hp[i]&&Math.random()<.3){hp[i]=4;poison[i]=0}}}
+  if(flea.y>H)flea=null;
+}
+function updateScorp(){
+  if(!scorp){if(wave>=2&&Math.random()<.0012){const left=Math.random()<.5,r=2+rnd(12);scorp={x:left?-8:W,y:r*8+1,r,dir:left?1:-1}}return}
+  scorp.x+=scorp.dir*(wave>=5?1:.6);
+  for(const c of [Math.floor(scorp.x/4),Math.floor((scorp.x+7)/4)])if(c>=0&&c<COLS){const i=scorp.r*COLS+c;if(hp[i])poison[i]=1}
+  if(frame%10===0)sfx.scorp();
+  if((scorp.dir>0&&scorp.x>W)||(scorp.dir<0&&scorp.x<-8))scorp=null;
+}
+
+/* ---------- player + shots ---------- */
+function mushOverlap(x,y){
+  const c0=Math.floor(x/4),c1=Math.floor((x+3.999)/4),r0=Math.floor(y/8),r1=Math.floor((y+4.999)/8);
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){if(r<1||r>=ROWS||c<0||c>=COLS)continue;const h=hp[r*COLS+c];if(h&&ov(x,y,4,5,c*4,r*8+1,4,HPROWS[h]))return true}
+  return false;
+}
+function movePlayer(ix,iy){
+  const was=mushOverlap(px,py);
+  const nx=clamp(px+ix*1.15,0,W-4);if(was||!mushOverlap(nx,py))px=nx;
+  const ny=clamp(py+iy*1.7,PZ*8,H-5);if(was||!mushOverlap(px,ny))py=ny;
+}
+function bulletHit(){
+  const bx=bullet.x,by=bullet.y;
+  for(const s of segs)if(ov(bx,by,2,4,s.c*4,s.r*8+1,4,6)){killSeg(s);return true}
+  if(spider&&ov(bx,by,2,4,spider.x,spider.y,8,6)){
+    const dy=Math.abs(py-spider.y),pts=dy<14?900:dy<30?600:300;addScore(pts);pop(spider.x,spider.y,pts);
+    burst(spider.x+4,spider.y+3,SPIDER_C[0],14);sfx.bonus();spider=null;spiderTimer=120+rnd(240);return true;
+  }
+  if(flea&&ov(bx,by,2,4,flea.x,flea.y,4,6)){
+    if(--flea.hp<=0){addScore(200);burst(flea.x+2,flea.y+3,FLEA_C,10);sfx.hit();flea=null}else{flea.vy=4;sfx.chip()}return true;
+  }
+  if(scorp&&ov(bx,by,2,4,scorp.x,scorp.y,8,6)){addScore(1000);pop(scorp.x,scorp.y,1000);burst(scorp.x+4,scorp.y+3,SCORP_C,14);sfx.bonus();scorp=null;return true}
+  const c0=bx>>2,c1=(bx+1)>>2,r0=by>>3,r1=(by+3)>>3;
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+    if(r<1||r>=ROWS||c<0||c>=COLS)continue;const i=r*COLS+c;
+    if(hp[i]){hp[i]--;if(!hp[i]){poison[i]=0;addScore(1)}sfx.chip();return true}
+  }
+  return false;
+}
+function updateBullet(){if(!bullet)return;for(let k=0;k<3;k++){bullet.y-=2;if(bullet.y<8||bulletHit()){bullet=null;return}}}
+function playerHit(){
+  for(const s of segs)if(ov(px,py,4,5,s.c*4,s.r*8+1,4,6))return true;
+  if(spider&&ov(px,py,4,5,spider.x+1,spider.y+1,6,4))return true;
+  if(flea&&ov(px,py,4,5,flea.x,flea.y,4,6))return true;
+  return false;
+}
+function die(){
+  state='dying';dieT=75;lives--;carry=segs.length||12;bullet=null;sfx.die();
+  const cx=Math.round(px)+2,cy=Math.round(py)+2;
+  ['#ffffff','#f8d058','#e84848',PLAYER_C].forEach(c=>burst(cx,cy,c,12,1.8));
+}
+function respawn(){
+  px=78;py=180;clearStart();spawnCentipede(carry);spider=flea=scorp=null;spiderTimer=200;state='play';
+}
+function gameOver(){state='over';overT=240;if(score>=hi){hi=score;store.set('myriapod800.hi',String(hi))}}
+
+/* ---------- input ---------- */
+const keys=new Set();let fireLatch=false,joyX=0,joyY=0,fireTouch=false,gpX=0,gpY=0,gpFire=false,fireWas=false;
+const GAME_KEYS=['arrowup','arrowdown','arrowleft','arrowright',' '];
+addEventListener('keydown',e=>{
+  audioInit();const k=e.key.toLowerCase();if(GAME_KEYS.includes(k))e.preventDefault();
+  if(!e.repeat&&[' ','z','x','enter'].includes(k))fireLatch=true;
+  if(e.repeat&&(k==='p'||k==='m'||k==='escape'))return;
+  if(k==='p'||k==='escape')togglePause();else if(k==='m')toggleMute();else keys.add(k);
+});
+addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+addEventListener('blur',()=>{keys.clear();if(state==='play')togglePause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play')togglePause()});
+const k=(...a)=>a.some(x=>keys.has(x));
+const inX=()=>(k('arrowright','d')?1:0)-(k('arrowleft','a')?1:0)+joyX+gpX;
+const inY=()=>(k('arrowdown','s')?1:0)-(k('arrowup','w')?1:0)+joyY+gpY;
+const fireDown=()=>k(' ','z','x','enter')||fireTouch||gpFire;
+function pollPad(){
+  gpX=gpY=0;gpFire=false;let list;try{list=navigator.getGamepads?navigator.getGamepads():[]}catch(e){return}
+  for(const g of list||[]){if(!g)continue;const ax=g.axes[0]||0,ay=g.axes[1]||0,b=g.buttons;
+    if(Math.abs(ax)>.2)gpX=ax;if(Math.abs(ay)>.2)gpY=ay;
+    if(b[14]&&b[14].pressed)gpX=-1;if(b[15]&&b[15].pressed)gpX=1;if(b[12]&&b[12].pressed)gpY=-1;if(b[13]&&b[13].pressed)gpY=1;
+    if([0,1,2,3,7].some(n=>b[n]&&b[n].pressed))gpFire=true;break}
+}
+
+const pad=$('pad'),knob=$('knob'),fireBtn=$('fireBtn'),soundBtn=$('soundBtn'),pauseBtn=$('pauseBtn');
+let padId=null;
+function padMove(e){
+  const r=pad.getBoundingClientRect(),rad=r.width/2;
+  let dx=(e.clientX-(r.left+rad))/(rad*.62),dy=(e.clientY-(r.top+rad))/(rad*.62);const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m}
+  joyX=Math.abs(dx)<.15?0:dx;joyY=Math.abs(dy)<.15?0:dy;
+  knob.style.transform=`translate(${dx*rad*.42}px,${dy*rad*.42}px)`;
+}
+pad.addEventListener('pointerdown',e=>{audioInit();setTouch(true);padId=e.pointerId;try{pad.setPointerCapture(e.pointerId)}catch(_){}padMove(e);e.preventDefault()});
+pad.addEventListener('pointermove',e=>{if(e.pointerId===padId)padMove(e)});
+const padEnd=e=>{if(e.pointerId!==padId)return;padId=null;joyX=joyY=0;knob.style.transform=''};
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,padEnd));
+fireBtn.addEventListener('pointerdown',e=>{audioInit();setTouch(true);fireTouch=true;fireLatch=true;fireBtn.classList.add('on');try{fireBtn.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()});
+const fireEnd=()=>{fireTouch=false;fireBtn.classList.remove('on')};
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>fireBtn.addEventListener(ev,fireEnd));
+fireBtn.addEventListener('contextmenu',e=>e.preventDefault());
+pauseBtn.addEventListener('click',()=>{audioInit();togglePause()});
+soundBtn.addEventListener('click',()=>{audioInit();toggleMute()});
+cv.addEventListener('pointerdown',()=>{audioInit();if(state==='title')startGame();else if(state==='over'&&overT<180)state='title';else if(state==='paused')togglePause()});
+
+function togglePause(){if(state==='play')state='paused';else if(state==='paused')state='play';pauseBtn.textContent=state==='paused'?'RESUME':'PAUSE'}
+function toggleMute(){muted=!muted;store.set('myriapod800.mute',muted?'1':'0');soundBtn.textContent=muted?'SOUND OFF':'SOUND ON'}
+soundBtn.textContent=muted?'SOUND OFF':'SOUND ON';
+
+/* ---------- update ---------- */
+function update(){
+  frame++;pollPad();const f=fireDown()||fireLatch,fe=f&&!fireWas;fireWas=fireDown();fireLatch=false;
+  if(state==='title'){if(fe)startGame()}
+  else if(state==='play'){
+    movePlayer(clamp(inX(),-1,1),clamp(inY(),-1,1));
+    if(f&&!bullet){bullet={x:Math.round(px)+1,y:Math.round(py)-3};sfx.shoot()}
+    updateBullet();updateCentipede();updateSpider();updateFlea();updateScorp();
+    if(playerHit())die();
+    else if(!segs.length){wave++;spawnCentipede(12);pop(null,84,'WAVE '+(wave+1),90);sfx.arp([392,523,659,784])}
+  }
+  else if(state==='dying'){
+    if(--dieT<=0){
+      if(lives<=0)gameOver();
+      else{state='restore';restoreT=0;restoreList=[];for(let i=0;i<CELLS;i++)if(hp[i]&&(hp[i]<4||poison[i]))restoreList.push(i)}
+    }
+  }
+  else if(state==='restore'){
+    if(++restoreT>=5){restoreT=0;const i=restoreList.shift();if(i!==undefined){hp[i]=4;poison[i]=0;addScore(5);sfx.restore()}else respawn()}
+  }
+  else if(state==='over'){overT--;if(overT<=0||(overT<180&&fe))state='title'}
+  if(state!=='paused'){
+    for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.t--}parts=parts.filter(p=>p.t>0);
+    for(const p of pops)p.t--;pops=pops.filter(p=>p.t>0);
+  }
+}
+
+/* ---------- render ---------- */
+function renderField(P){
+  for(let r=1;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const i=r*COLS+c,h=hp[i];if(!h)continue;const m=MUSH[h],x=c*4,y=r*8+1;
+    draw(m.cap,x,y,poison[i]?P.poison:P.mush);if(m.stem)draw(m.stem,x,y+3,poison[i]?P.head:P.stem);
+  }
+  for(const s of segs)draw(legFrame?SEG_B:SEG_A,s.c*4,s.r*8+1,s.lead?P.cent:P.head);
+  if(spider)draw(SPIDER[(spider.f>>3)&1],spider.x,spider.y,SPIDER_C[wave%2]);
+  if(flea)draw(FLEA,flea.x,flea.y,FLEA_C);
+  if(scorp)draw(scorp.dir>0?SCORP_R:SCORP_L,scorp.x,scorp.y,SCORP_C);
+  if(state==='play'||state==='paused')draw(PLAYER,px,py,PLAYER_C);
+  if(state==='dying'&&dieT>55)draw(PLAYER,px,py,['#fff','#f8d058','#e84848'][frame%3]);
+  if(bullet){ctx.fillStyle=SHOT_C;ctx.fillRect(bullet.x,bullet.y,2,4)}
+  for(const p of parts){ctx.fillStyle=p.col;ctx.fillRect(Math.round(p.x),Math.round(p.y),1,1)}
+  for(const p of pops){
+    if(p.x===null){const w=tw(p.s,2);ctx.fillStyle='#000';ctx.fillRect((W-w)/2-3,p.y-3,w+6,16);ctext(p.s,p.y,P.head,2,2)}
+    else text(p.s,clamp(Math.round(p.x),0,W-tw(p.s)),Math.round(p.y)-6,'#ffffff');
+  }
+  // HUD row (row 0)
+  text(pad6(score),1,1,P.head);
+  ctext('HI '+pad6(hi),1,P.stem);
+  const reserve=Math.min(5,lives-(state==='over'?0:1));
+  for(let i=0;i<reserve;i++)draw(PLAYER,155-i*6,1,PLAYER_C);
+}
+function boxText(s,y,col,sx=1,sy=sx){const w=tw(s,sx);ctx.fillStyle='#000';ctx.fillRect(Math.floor((W-w)/2)-3,y-3,w+6,5*sy+6);ctext(s,y,col,sx,sy)}
+function renderTitle(){
+  const P=pal();
+  ctext('MYRIAPOD',18,P.mush,2,3);
+  ctext('A BUG HUNT FOR 8-BIT MACHINES',40,'#8a80a6');
+  const rows=[[SEG_A,P.head,'HEAD','100'],[SEG_A,P.cent,'BODY','10'],[SPIDER[0],SPIDER_C[0],'SPIDER','300-900'],[FLEA,FLEA_C,'FLEA','200'],[SCORP_R,SCORP_C,'SCORPION','1000']];
+  rows.forEach(([s,c,n,v],i)=>{const y=60+i*11;draw(s,s.w>4?34:36,y,c);text(n,50,y+1,'#c8c0dc');text(v,124-tw(v),y+1,P.stem)});
+  draw(MUSH[4].cap,36,119,P.mush);draw(MUSH[4].stem,36,122,P.stem);text('MUSHROOM',50,120,'#c8c0dc');text('1',124-tw('1'),120,P.stem);
+  if((frame>>5)&1)ctext(isTouch?'TAP FIRE TO START':'PRESS FIRE TO START',140,'#ffffff');
+  const hx=(Math.floor(frame/5)*4)%(W+64)-12;
+  for(let i=0;i<10;i++)draw((frame>>3)&1?SEG_A:SEG_B,hx-i*4,155,i?P.cent:P.head);
+  ctext('HI '+pad6(hi),176,P.stem);
+}
+function render(){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  if(state==='title'){renderTitle();return}
+  const P=pal();renderField(P);
+  if(state==='paused')boxText('PAUSED',90,'#ffffff',2,2);
+  if(state==='over'){boxText('GAME OVER',84,P.head,2,2);if(overT<180&&(frame>>5)&1)boxText(isTouch?'TAP FIRE':'PRESS FIRE',106,'#ffffff')}
+}
+
+/* ---------- layout: snap the scale so each logical pixel lands on whole device pixels ---------- */
+const body=document.body,stage=$('stage'),cell=$('screenCell'),bezel=$('bezel'),band=$('band');
+let isTouch=matchMedia('(pointer: coarse)').matches;
+function setTouch(v){if(isTouch!==v){isTouch=v;layout()}}
+addEventListener('touchstart',()=>setTouch(true),{passive:true});
+function layout(){
+  body.classList.toggle('touch',isTouch);
+  const portrait=innerHeight>=innerWidth;body.classList.toggle('portrait',portrait);body.classList.toggle('landscape',!portrait);
+  const chromeX=bezel.offsetWidth-cv.offsetWidth,chromeY=bezel.offsetHeight-cv.offsetHeight;
+  const raw=Math.min((cell.clientWidth-chromeX)/320,(cell.clientHeight-chromeY)/192);
+  const dpr=window.devicePixelRatio||1;
+  const s=raw*dpr>=1?Math.floor(raw*dpr)/dpr:Math.max(raw,.25);
+  cv.style.width=(320*s)+'px';cv.style.height=(192*s)+'px';
+  const sr=stage.getBoundingClientRect(),br=cv.getBoundingClientRect();
+  band.style.top=(br.top-sr.top+br.height*.64)+'px';
+}
+new ResizeObserver(layout).observe(stage);
+addEventListener('orientationchange',()=>setTimeout(layout,120));
+layout();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(layout);
+
+/* ---------- loop ---------- */
+const STEP=1000/60;let last=performance.now(),acc=0;
+function loop(t){acc+=Math.min(250,t-last);last=t;while(acc>=STEP){update();acc-=STEP}render();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>

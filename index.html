@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Underreach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <div class="band" id="band" aria-hidden="true"></div>
+  <div id="screenCell">
+    <div class="bezel" id="bezel">
+      <canvas id="screen" width="160" height="192" aria-label="Underreach game screen"></canvas>
+      <div class="plate"><span class="name"><span class="mark"><i></i><i></i><i></i></span>UNDERREACH</span><span>ANTIC MODE E · 160×192</span></div>
+    </div>
+  </div>
+  <p class="hint" id="hint"><b>ARROWS / WASD</b> MOVE &nbsp;·&nbsp; <b>SPACE / ENTER</b> ACTION &nbsp;·&nbsp; <b>`</b> DEBUG</p>
+  <div id="ctl">
+    <div class="col" id="leftCol"><div id="pad" aria-label="Movement joystick"><div id="knob"></div></div></div>
+    <div class="col" id="rightCol"><button id="actBtn" type="button" aria-label="Action">ACT</button></div>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

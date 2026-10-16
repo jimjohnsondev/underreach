@@ -1,0 +1,9 @@
+{
+ "_note": "Starting Wayfarer and movement tuning. walkSpeed is in tiles per second; walkFrameTicks is how many 60 Hz ticks each walk frame lasts.",
+ "hp": 26,
+ "maxHp": 26,
+ "level": 1,
+ "marks": 12,
+ "walkSpeed": 4.5,
+ "walkFrameTicks": 6
+}

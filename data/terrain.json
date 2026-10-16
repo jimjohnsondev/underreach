@@ -1,0 +1,22 @@
+{
+ "_note": "What each tile does. 'blocks' stops the Wayfarer's feet. 'prompt' is shown in the status strip when the action button is pressed while standing on the tile.",
+ "tiles": {
+  "grass":       { "blocks": false },
+  "grass_tufts": { "blocks": false },
+  "wildflowers": { "blocks": false },
+  "tree":        { "blocks": true },
+  "forest":      { "blocks": true },
+  "water":       { "blocks": true },
+  "path":        { "blocks": false },
+  "bridge":      { "blocks": false },
+  "mountain":    { "blocks": true },
+  "hills":       { "blocks": false },
+  "marsh":       { "blocks": true },
+  "sand":        { "blocks": false },
+  "town":        { "blocks": false, "prompt": "ENTER TOWN?" },
+  "ruin":        { "blocks": false, "prompt": "ENTER RUIN?" },
+  "cave":        { "blocks": false, "prompt": "ENTER CAVE?" },
+  "waystone":    { "blocks": false, "prompt": "TOUCH THE WAYSTONE?" },
+  "void":        { "blocks": true }
+ }
+}
