@@ -9,6 +9,8 @@ Dark, muted placeholder art for the engine core. Everything is plain JSON, so it
 | `palette.json` | The color list. Each color has a one-character key; `.` means transparent. |
 | `tiles.json` | 31 world tiles, 8 wide × 16 tall. Terrain: grass, grass_tufts, wildflowers, tree, forest, dark_forest, water, water_2, sea, sea_2, path, bridge (crossing side to side), bridge_v (crossing up and down), border_gate, mountain, cliff, hills, marsh, deep_marsh, sand, salt, void. Location icons: capital, house, town, village, ruin, cave, tower (also used for the lighthouse), waystone, landmark. Milestone 2 redrew the new terrain and icons and added `bridge_v`. |
 | `sprites.json` | The Wayfarer facing down, up and right (2 walk frames each), a gloom imp (2 frames) and a villager. |
+| `portraits.json` | Dialog-screen portraits, 50 wide × 100 tall (about 100×100 on screen): one per townsperson role (innkeeper, merchant, healer, elder, guard, villager, child, farmer, noble, steward, explorer), plus the Wayfarer for the character sheet. Placeholders drawn in milestone 4; `.` shows the backdrop behind. |
+| `backdrops.json` | Dialog-screen backdrops, 160 wide × 124 tall (the top two-thirds of the screen): town, indoors, castle and ruin. Which one appears depends on where the person stands (`backdrops` in `data/npcs.json`). Placeholders; keep them dark so the portrait stands out. |
 | `font-3x5.json` | The 3×5 font: A–Z, 0–9 and common punctuation. |
 | `preview-*.png` | Previews of the tiles, sprites and a sample world screen. |
 | `sample-screen-160x192.png` | The sample screen at true 160×192 size, before wide-pixel scaling. |

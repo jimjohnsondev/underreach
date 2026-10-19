@@ -56,7 +56,7 @@ function fillTemplate(template, random) {
       ground.push(entry.ground || template.ground || null);
       if (entry.start && !start) start = { x, y };
       if (entry.npc && random.chance(entry.chance ?? 1)) {
-        npcs.push({ role: entry.npc, x, y, wander: entry.wander || 0 });
+        npcs.push({ role: entry.npc, x, y, wander: entry.wander || 0, tile: entry.tile });
       }
     }
   });

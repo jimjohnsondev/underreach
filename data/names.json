@@ -1,0 +1,42 @@
+{
+ "_note": "Names for places and people, by region id (see data/worldgen.json). A place name is a 'first' part joined to a 'last' part (MOSS + FORD = MOSSFORD), then put into the pattern for its kind of location, where {name} is that joined name and {first} just the first part. Names are kept to 12 letters or fewer so they fit the status strip. People's names are picked from 'people'. Locations with a label in worldgen.json (THE CAPITAL, GLASS CITY...) keep it instead.",
+ "maxLength": 12,
+ "patterns": {
+  "town":     "{name}",
+  "village":  "{name}",
+  "house":    "{name}",
+  "ruin":     "{name}",
+  "cave":     "{first} CAVE",
+  "tower":    "{first} TOWER",
+  "waystone": "{first} STONE",
+  "landmark": "{first} SPIRE",
+  "capital":  "{name}"
+ },
+ "regions": {
+  "greenvale": {
+   "first": ["MOSS", "ASH", "BRIGHT", "FERN", "HOLLY", "OAK", "WREN", "BARLEY", "HAZEL", "MEAD", "ELDER", "LARK"],
+   "last": ["FORD", "BRIDGE", "WICK", "HOLM", "STEAD", "DALE", "COMBE", "LEA", "MERE", "BURY", "FIELD", "HAM"],
+   "people": ["ALDA", "BRAM", "CORIN", "DAGNA", "EDRIC", "FENNA", "GARRET", "HILDE", "IVO", "JORA", "KELL", "LIESL", "MAREN", "NOLL", "OSRIC", "PERRIN", "QUILL", "ROWAN", "SELA", "TAMSIN", "ULF", "VESNA", "WILLA", "YARROW", "ANSEL", "BRIDGET", "COLM", "DORA", "EMRYS", "FLINT"]
+  },
+  "fenmarch": {
+   "first": ["REED", "SEDGE", "MIRE", "EEL", "HERON", "PEAT", "WILLOW", "SILT", "RUSH", "TEAL"],
+   "last": ["MERE", "HOLT", "FEN", "SLOUGH", "WATER", "HAVEN", "CARR", "MOOR", "POOL", "DYKE"],
+   "people": ["ADA", "BEDE", "CAEL", "DUNN", "ELKE", "FOLK", "GWYN", "HOB", "ISOLD", "JUNE", "KITT", "LOWEN", "MOSSA", "NESS", "ODDA", "PIM", "QUIN", "RANN", "SIBBY", "TOLLY", "UNA", "VELL", "WISP", "YESTIN", "ARDEN", "BRISK", "CALLA", "DERWA", "EBB", "FENWICK"]
+  },
+  "highcairn": {
+   "first": ["CRAG", "STONE", "EAGLE", "FROST", "GRAY", "IRON", "HIGH", "SCREE", "COLD", "RAVEN"],
+   "last": ["CAIRN", "TOR", "FELL", "PIKE", "SCAR", "HOLD", "GATE", "CLIFF", "KNOLL", "RIDGE"],
+   "people": ["ARNE", "BRYN", "CATHAL", "DEVRA", "EIRIK", "FROYA", "GORM", "HALLA", "INGE", "JARL", "KETIL", "LIV", "MAGNI", "NORA", "ORM", "RUNA", "SIGRID", "TORVALD", "ULLA", "VIGGO", "WENDEL", "YRSA", "ASTA", "BJORN", "DAGNY", "EGIL", "FINN", "GUDRUN", "HAKON", "IDUNN"]
+  },
+  "saltreach": {
+   "first": ["SALT", "GLASS", "DUNE", "SUN", "DUST", "AMBER", "WHITE", "SAND", "EMBER", "OPAL"],
+   "last": ["WELL", "SPRING", "REACH", "STEAD", "KEEP", "PAN", "CROSS", "FALL", "MESA", "WATCH"],
+   "people": ["AZRA", "BASIM", "CYRA", "DARIUS", "ESME", "FARAH", "GHAZI", "HANA", "IDRIS", "JALA", "KARIM", "LEILA", "MIRA", "NAJ", "OMID", "RASHA", "SAMIR", "TALA", "UMAR", "VASHTI", "YASMIN", "ZAHRA", "ARASH", "BEHRAM", "DALIA", "EHSAN", "FIRUZ", "GOLI", "HAMID", "INAYA"]
+  },
+  "stormcoast": {
+   "first": ["GULL", "STORM", "GALE", "TIDE", "WRACK", "SPRAY", "SURF", "KELP", "SHALE", "BRINE"],
+   "last": ["HAVEN", "POINT", "COVE", "HEAD", "PORT", "SOUND", "NESS", "WICK", "STRAND", "BAY"],
+   "people": ["AILSA", "BRAN", "CAIT", "DOUGAL", "EWAN", "FIONA", "GREER", "HAMISH", "ISLA", "JOCK", "KENNA", "LACHIE", "MOIRA", "NIALL", "ORLA", "ROSS", "SEONA", "TAVISH", "UISDEAN", "VAIRI", "WILLIE", "AILEAS", "BEATHAG", "CALUM", "DEIRDRE", "EILIDH", "FERGUS", "GORDIE", "HEATHER", "IAIN"]
+  }
+ }
+}

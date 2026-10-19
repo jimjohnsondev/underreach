@@ -10,6 +10,8 @@ export const art = {
   tiles: {},     // tile name -> 8x16 canvas
   seeThroughTiles: new Set(),   // names of tiles with see-through pixels, drawn over their ground
   sprites: {},   // sprite name -> 8x16 canvas, including left-facing copies made by mirroring
+  portraits: {}, // role name -> 50x100 canvas, for the dialog screen
+  backdrops: {}, // backdrop name -> 160x124 canvas, drawn behind a portrait
   font: null,    // the 3x5 font data as loaded from font-3x5.json
 };
 
@@ -18,11 +20,13 @@ const TRANSPARENT = '.';
 
 /** Loads all the art files and prepares the tiles, sprites and font for drawing. */
 export async function loadArt() {
-  const [palette, tiles, sprites, font] = await Promise.all([
+  const [palette, tiles, sprites, font, portraits, backdrops] = await Promise.all([
     loadJSON('art/palette.json'),
     loadJSON('art/tiles.json'),
     loadJSON('art/sprites.json'),
     loadJSON('art/font-3x5.json'),
+    loadJSON('art/portraits.json'),
+    loadJSON('art/backdrops.json'),
   ]);
 
   art.colors = palette.colors;
@@ -40,6 +44,9 @@ export async function loadArt() {
       art.sprites[name.replace('_right_', '_left_')] = paintImage(rows, { mirrored: true });
     }
   }
+
+  for (const [name, rows] of Object.entries(portraits.portraits)) art.portraits[name] = paintImage(rows);
+  for (const [name, rows] of Object.entries(backdrops.backdrops)) art.backdrops[name] = paintImage(rows);
 }
 
 /** Fetches a JSON file and returns its contents, with a clear error if it can't be loaded. */

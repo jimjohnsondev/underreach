@@ -1,8 +1,9 @@
 // generate.js
 // Builds a whole world from a seed, following the steps in the design doc:
-//   1. regions and terrain, 2. required locations, 3. the other locations, then roads.
-// Names, people and rumors (step 4) come in later milestones. Finally it checks the world can
-// be played: everything must be reachable with all the gear, and all of Greenvale with none.
+//   1. regions and terrain, 2. required locations, 3. the other locations, then roads,
+//   4. names for the places (people are named when you meet them, rumors when they're told).
+// Finally it checks the world can be played: everything must be reachable with all the gear,
+// and all of Greenvale with none.
 import { makeGrid, indexOf, neighbors } from './grid.js';
 import { makeRandom, makeNoiseLayer, percentilesByGroup, seedToNumber } from './random.js';
 import { assignRegions } from './regions.js';
@@ -11,10 +12,12 @@ import { carveRivers } from './rivers.js';
 import { placeLocations } from './locations.js';
 import { buildRoads } from './roads.js';
 import { findPath } from './paths.js';
+import { nameLocations } from './names.js';
 
 /**
- * Generates a world. `data` holds the loaded data files: worldgen settings, location types and
- * terrain rules. Returns the finished grid with its locations and starting point.
+ * Generates a world. `data` holds the loaded data files: worldgen settings, location types,
+ * terrain rules and (optionally) names. Returns the finished grid with its locations and
+ * starting point.
  */
 export function generateWorld(seed, data) {
   const { worldgen: settings, locationTypes, terrain } = data;
@@ -51,6 +54,9 @@ export function generateWorld(seed, data) {
 
   grid.seed = seedNumber;
   grid.regionNames = settings.regions.map(r => r.name);
+  grid.regionIds = settings.regions.map(r => r.id);
+  // Naming uses its own random numbers, so changing the name lists never changes the land.
+  if (data.names) nameLocations(grid.locations, grid.regionIds, data.names, seedNumber);
   return grid;
 }
 

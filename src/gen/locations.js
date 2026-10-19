@@ -50,6 +50,8 @@ function placeOne(grid, settings, locationTypes, random, isOpenGround, request, 
     id: grid.locations.length,
     type: request.type,
     label: request.label || type.label,
+    kindLabel: type.label,                 // what kind of place it is, e.g. "RUIN"
+    fixedLabel: Boolean(request.label),    // true if worldgen.json names it; otherwise it gets a generated name
     short: request.short || null,
     x: spot.x,
     y: spot.y,

@@ -85,7 +85,9 @@ export function updatePlayer(player, input, world, obstacles = []) {
   // because the pixels are wide), so moving one tile sideways is half as many pixels as moving one
   // tile up or down. Diagonals are scaled down so they aren't faster than straight lines.
   const diagonal = dirX !== 0 && dirY !== 0 ? Math.SQRT1_2 : 1;
-  const tilesPerUpdate = player.walkSpeed / UPDATES_PER_SECOND * diagonal;
+  // speedMultiplier is set by the game each update, e.g. by a meal that speeds up travel.
+  const speed = player.walkSpeed * (player.speedMultiplier || 1);
+  const tilesPerUpdate = speed / UPDATES_PER_SECOND * diagonal;
   const stepX = dirX * tilesPerUpdate * TILE_W;
   const stepY = dirY * tilesPerUpdate * TILE_H;
 

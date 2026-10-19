@@ -5,7 +5,9 @@
 // The Wayfarer is always on one map: the world map, or the inside of a location he has entered.
 // The screen shows a one-tile status strip at the top above a 20x11-tile view of that map, which
 // scrolls to follow him. (A location's template can ask to flip a whole screen at a time instead,
-// Atari-style.) Inside a location, its townspeople go about their business.
+// Atari-style.) Inside a location, its townspeople go about their business; pressing action
+// next to one opens the dialog screen. The menu button opens the journal and pack. While either
+// screen is open, the world waits.
 //
 // The seed comes from the address bar (?seed=1234). Without one, a random seed is picked and
 // put in the address bar, so reloading the page rebuilds the same world.
@@ -21,6 +23,11 @@ import { generateWorld } from './gen/generate.js';
 import { buildInterior } from './interior.js';
 import { renderStatusStrip, renderDebugOverlay } from './hud.js';
 import { makeOverview, drawOverview } from './overview.js';
+import { createKnowledge, learnTopic, markVisited } from './knowledge.js';
+import { initPack, tickBonus, speedMultiplier } from './items.js';
+import { createNav } from './ui/nav.js';
+import { openDialog, updateDialog, drawDialog } from './ui/dialog.js';
+import { openMenu, updateMenu, drawMenu } from './ui/menu.js';
 
 // Screen layout, in game pixels.
 const STRIP_H = TILE_H;          // the status strip is one tile tall
@@ -49,6 +56,11 @@ let message = null;              // a message in the status strip, if any: { tex
 // direction held to walk in would carry him straight onto the exit, just below where he appears.
 let waitForRelease = false;
 let player;
+let knowledge;                   // topics learned and places visited (the journal)
+let regions;                     // { names, ids } of the world's regions, by region number
+let dialog = null;               // the conversation on screen, if any
+let menu = null;                 // the menu on screen, if any
+const nav = createNav();         // turns the stick into cursor moves on those screens
 let overview = null;             // the debug map overview image, made when first shown
 let updateCount = 0;             // game updates since the game started; drives animation
 
@@ -65,6 +77,7 @@ onKey('Backquote', () => { showDebug = !showDebug; });
 onKey('KeyN', () => { if (showDebug) startNewWorld(randomSeed()); });
 onKey('KeyG', () => { if (showDebug) toggleAllGear(); });
 onKey('KeyM', () => { if (showDebug) showOverview = !showOverview; });
+onKey('KeyK', () => { if (showDebug) giveTestItems(); });
 
 start();
 
@@ -72,7 +85,7 @@ start();
 async function start() {
   initScreen();
   try {
-    const [, worldgen, locations, terrain, gear, stats, npcSettings] = await Promise.all([
+    const [, worldgen, locations, terrain, gear, stats, npcSettings, names, dialogue, items] = await Promise.all([
       loadArt(),
       loadJSON('data/worldgen.json'),
       loadJSON('data/locations.json'),
@@ -80,14 +93,19 @@ async function start() {
       loadJSON('data/gear.json'),
       loadJSON('data/player.json'),
       loadJSON('data/npcs.json'),
+      loadJSON('data/names.json'),
+      loadJSON('data/dialogue.json'),
+      loadJSON('data/items.json'),
     ]);
     data = {
       worldgen, locationTypes: locations.types, terrain, gear: gear.gear, npcSettings,
+      names, dialogue, items, rewards: stats.xpRewards,
       templates: await loadTemplates(locations.types),
     };
     // Set the feet box first: it's shared by the Wayfarer and everyone else who walks.
     setFeetBox(stats.feet);
     player = createPlayer(stats);
+    initPack(player);
     startNewWorld(seedFromAddress() ?? randomSeed());
   } catch (error) {
     showLoadError(error);
@@ -111,10 +129,15 @@ function startNewWorld(seed) {
 
   overworld = createWorld(grid, data.terrain);
   world = overworld;
+  regions = { names: grid.regionNames, ids: grid.regionIds };
   insideLocation = null;
   npcs = [];
   message = null;
+  dialog = null;
+  menu = null;
   overview = null;
+  // A new world means everything learned so far is about places that no longer exist.
+  knowledge = createKnowledge();
   placePlayer(player, overworld.start.x, overworld.start.y);
 
   const url = new URL(window.location.href);
@@ -137,6 +160,23 @@ function randomSeed() {
 function toggleAllGear() {
   if (player.gear.size) player.gear.clear();
   else Object.keys(data.gear).forEach(name => player.gear.add(name));
+}
+
+/** Debug: gives every key item (for trying SHOW) and 50 marks (for trying shops). */
+function giveTestItems() {
+  for (const id of Object.keys(data.items.keyItems)) {
+    if (!player.pack.keyItems.includes(id)) player.pack.keyItems.push(id);
+  }
+  player.marks += 50;
+  showMessage('KEY ITEMS AND 50 MK');
+}
+
+/** What the dialog and menu screens need from the rest of the game. */
+function gameForScreens() {
+  return {
+    player, knowledge, data,
+    learn: (topics, note) => topics.forEach(topic => learnTopic(knowledge, topic, note, data.rewards)),
+  };
 }
 
 /**
@@ -171,10 +211,38 @@ function runGameLoop() {
 function update() {
   updateCount++;
   const input = readInput();
+  const moves = nav(input);
+
+  // While a screen is open, it gets the controls and the world waits.
+  if (dialog) {
+    updateDialog(dialog, moves, input);
+    if (dialog.closed) {
+      if (dialog.goodbye) showMessage(dialog.goodbye);
+      dialog = null;
+      waitForRelease = true;
+    }
+    return;
+  }
+  if (menu) {
+    updateMenu(menu, moves, input);
+    if (menu.closed) {
+      menu = null;
+      waitForRelease = true;
+    }
+    return;
+  }
+  if (input.menu) {
+    menu = openMenu(gameForScreens());
+    nav.reset();
+    return;
+  }
+
   if (waitForRelease) {
     if (Math.hypot(input.x, input.y) < STICK_RELEASED) waitForRelease = false;
     else input.x = input.y = 0;
   }
+  tickBonus(player);
+  player.speedMultiplier = speedMultiplier(player, !insideLocation);
   updateNpcs(npcs, world, player, data.npcSettings);
   updatePlayer(player, input, world, npcObstacles(npcs));
 
@@ -186,9 +254,8 @@ function update() {
       leaveLocation();
       return;
     }
-    // Talking comes in milestone 4; for now, show who this is.
     const someone = input.action && npcInReach(npcs, player, data.npcSettings);
-    if (someone) showMessage(someone.label);
+    if (someone) startConversation(someone);
   } else {
     // Walking onto a location takes him straight in.
     const here = world.locationAt(tx, ty);
@@ -201,13 +268,39 @@ function showMessage(text) {
   message = { text, timeLeft: MESSAGE_TIME };
 }
 
-/** Takes the Wayfarer inside a location, and brings its townspeople out. */
+/** Opens the dialog screen with a townsperson. */
+function startConversation(speaker) {
+  message = null;
+  dialog = openDialog({
+    speaker,
+    here: insideLocation,
+    residents: npcs,
+    locations: overworld.locations.filter(l => !l.hidden),
+    regionNames: regions.names,
+    regionIds: regions.ids,
+    lines: data.dialogue,
+    seed: overworld.seed,
+  }, gameForScreens());
+  nav.reset();
+}
+
+/**
+ * Takes the Wayfarer inside a location, and brings its townspeople out. The first visit adds the
+ * place to the journal.
+ */
 function enterLocation(here) {
   insideLocation = here;
   const interior = buildInterior(here, data.locationTypes[here.type], overworld.seed, data.templates, overworld.tileRules);
   world = createWorld(interior, data.terrain);
-  npcs = createNpcs(interior.npcs, data.npcSettings);
+  npcs = createNpcs(interior.npcs, data.npcSettings, {
+    location: here, regionId: regions.ids[here.region], names: data.names, seed: overworld.seed,
+  });
   message = null;
+  const words = data.dialogue.journal;
+  const note = { text: words.visited.replace('{place}', here.label), from: words.you };
+  if (markVisited(knowledge, here, data.rewards, note)) {
+    showMessage(words.discovered.replace('{place}', here.short || here.label));
+  }
   waitForRelease = true;
   placePlayer(player, world.start.x, world.start.y, 'up');
 }
@@ -227,6 +320,10 @@ function leaveLocation() {
 
 /** Draws the whole screen. */
 function render() {
+  // The dialog and menu screens cover everything.
+  if (dialog) return drawDialog(ctx, dialog);
+  if (menu) return drawMenu(ctx, menu);
+
   const { tx, ty } = tileUnderFeet(player);
 
   if (showDebug && showOverview) {
@@ -250,7 +347,8 @@ function debugLines(tx, ty) {
     `FPS ${fps}`,
     `SEED ${overworld.seed}`,
     `GEAR ${player.gear.size ? 'ALL' : 'NONE'}`,
-    'N NEW  G GEAR  M MAP',
+    `XP ${knowledge.xp}  TOPICS ${knowledge.topics.size}`,
+    'N NEW G GEAR M MAP K ITEMS',
   ];
 }
 

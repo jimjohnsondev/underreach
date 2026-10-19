@@ -1,0 +1,51 @@
+{
+ "_note": "Things you can carry and buy. Prices are in marks. Food: eating gives its effect for foodDuration updates (60 a second; 10800 is 3 minutes), and a new meal replaces the old one. 'heal' restores HP now; 'stat' and 'amount' raise a stat (stats start counting in milestone 5); 'walkSpeed' multiplies walking speed on the world map; 'regen' speeds up healing (milestone 5). Equipment does nothing until milestone 5. Shops: each role lists what it sells by region id, falling back to 'default', plus any services; a service's 'reply' names the line in dialogue.json's 'shop' section that the shopkeeper says.",
+ "packSize": 3,
+ "foodDuration": 10800,
+ "food": {
+  "bread":      { "name": "BREAD AND CHEESE", "price": 3, "effect": { "heal": 15 } },
+  "stew":       { "name": "HEARTY STEW",      "price": 5, "effect": { "stat": "STR", "amount": 2 } },
+  "honey_cake": { "name": "HONEY CAKE",       "price": 5, "effect": { "regen": true } },
+  "fen_tea":    { "name": "FEN TEA",          "price": 4, "effect": { "stat": "WIS", "amount": 2 } },
+  "pie":        { "name": "TRAVELER'S PIE",   "price": 6, "effect": { "stat": "DEX", "amount": 2, "walkSpeed": 1.25 } },
+  "wine":       { "name": "SPICED WINE",      "price": 7, "effect": { "stat": "CHA", "amount": 2 } }
+ },
+ "equipment": {
+  "knife":        { "name": "KNIFE",        "slot": "weapon", "price": 8,  "damage": 2 },
+  "short_sword":  { "name": "SHORT SWORD",  "slot": "weapon", "price": 25, "damage": 4 },
+  "spear":        { "name": "SPEAR",        "slot": "weapon", "price": 35, "damage": 5 },
+  "sling":        { "name": "SLING",        "slot": "weapon", "price": 18, "damage": 3 },
+  "padded_coat":  { "name": "PADDED COAT",  "slot": "armor",  "price": 12, "armor": 1 },
+  "leather":      { "name": "LEATHER",      "slot": "armor",  "price": 30, "armor": 2 },
+  "scale":        { "name": "SCALE MAIL",   "slot": "armor",  "price": 60, "armor": 3 },
+  "owl_feather":  { "name": "OWL FEATHER",  "slot": "charm",  "price": 20, "perk": "WIS +1" },
+  "salt_crystal": { "name": "SALT CRYSTAL", "slot": "charm",  "price": 20, "perk": "REGEN" }
+ },
+ "keyItems": {
+  "broken_compass":       { "name": "BROKEN COMPASS" },
+  "cartographer_journal": { "name": "CARTOGRAPHER'S JOURNAL" }
+ },
+ "shops": {
+  "merchant": {
+   "sells": {
+    "default":    ["bread", "pie", "knife", "padded_coat", "sling"],
+    "fenmarch":   ["bread", "fen_tea", "sling", "leather", "owl_feather"],
+    "highcairn":  ["bread", "stew", "spear", "leather", "owl_feather"],
+    "saltreach":  ["bread", "pie", "short_sword", "scale", "salt_crystal"],
+    "stormcoast": ["bread", "pie", "short_sword", "leather", "salt_crystal"]
+   }
+  },
+  "innkeeper": {
+   "sells": {
+    "default":   ["bread", "stew", "wine"],
+    "fenmarch":  ["bread", "fen_tea", "stew"],
+    "saltreach": ["bread", "wine", "honey_cake"]
+   },
+   "services": { "room": { "name": "A ROOM FOR THE NIGHT", "price": 8, "heal": "full", "reply": "slept" } }
+  },
+  "healer": {
+   "sells": { "default": ["honey_cake", "fen_tea"] },
+   "services": { "healing": { "name": "HEALING", "price": 5, "heal": "full", "reply": "healed" } }
+  }
+ }
+}

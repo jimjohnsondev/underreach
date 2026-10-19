@@ -9,22 +9,39 @@
 import { art } from './art.js';
 import { TILE_W, TILE_H } from './world.js';
 import { feetBox, feetBlocked } from './player.js';
+import { makeRandom } from './gen/random.js';
+import { personName } from './gen/names.js';
 
 const UPDATES_PER_SECOND = 60;
 // The four ways a wanderer can step: right, left, down, up.
 const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const MOODS = ['friendly', 'neutral', 'wary', 'hostile'];
 
 /**
- * Creates the townspeople for a location from its template's spots ({ role, x, y, wander }).
- * `settings` is data/npcs.json.
+ * Creates the townspeople for a location from its template's spots ({ role, x, y, wander, tile }).
+ * `settings` is data/npcs.json. `place` is { location, regionId, names, seed }: who they are
+ * (name, mood) comes from the seed and where they stand, so they're the same on every visit.
  */
-export function createNpcs(spots, settings) {
+export function createNpcs(spots, settings, place) {
+  const usedNames = new Set();
   return spots.map(spot => {
     const role = settings.roles[spot.role];
     if (!role) console.warn(`Unknown townsperson role "${spot.role}"`);
+    const id = `${place.location.id}:${spot.x},${spot.y}`;
+    const random = makeRandom(`${place.seed}-${id}`);
+
+    // No two people in one place share a name, while the region's list lasts. The name has its
+    // own random numbers: sharing the mood's would make a name give away the mood.
+    const name = personName(place.names, place.regionId, `${place.seed}-${id}-name`, usedNames);
+    usedNames.add(name);
+
     return {
+      id,
       role: spot.role,
       label: role ? role.label : spot.role.toUpperCase(),
+      name,
+      disposition: pickMood(random, (role && role.disposition) || settings.disposition),
+      backdrop: settings.backdrops[spot.tile] || settings.backdrops.default,
       sprite: role ? role.sprite : null,
       x: spot.x * TILE_W,
       y: spot.y * TILE_H,
@@ -120,6 +137,17 @@ export function drawNpc(ctx, npc, x, y, settings) {
   const second = npc.sprite && art.sprites[`${npc.sprite}_2`];
   const image = own ? (npc.frame && second ? second : own) : art.sprites[settings.standIn];
   if (image) ctx.drawImage(image, x, y);
+}
+
+/** Picks a mood (friendly, neutral, wary or hostile) using the odds in `weights`. */
+function pickMood(random, weights) {
+  const total = MOODS.reduce((sum, mood) => sum + (weights[mood] || 0), 0);
+  let roll = random.next() * total;
+  for (const mood of MOODS) {
+    roll -= weights[mood] || 0;
+    if (roll < 0) return mood;
+  }
+  return 'neutral';
 }
 
 /** Returns a random whole number between range[0] and range[1]. */

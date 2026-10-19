@@ -1,22 +1,24 @@
 {
- "_note": "Townspeople. 'label' is shown in the status strip when you press action next to them (until conversation arrives in milestone 4). 'sprite' is their picture in art/sprites.json; a second frame named like 'npc_innkeeper_2' makes them animate. Until a role has its own sprite, 'standIn' is drawn instead. walkSpeed is in tiles per second; talkReach is how close (in tiles, feet to feet) you must be to talk to someone; pauses and walks are in game updates (60 a second), picked at random between the two numbers.",
+ "_note": "Townspeople. 'label' is what they do, shown with their name. 'sprite' is their picture in art/sprites.json; a second frame named like 'npc_innkeeper_2' makes them animate. Until a role has its own sprite, 'standIn' is drawn instead. Their dialog-screen portrait is the role's entry in art/portraits.json, and the backdrop behind them depends on the tile they stand on ('backdrops', from art/backdrops.json). 'disposition' gives the odds of each mood for a new person (Friendly, Neutral, Wary, Hostile); a role can have its own. walkSpeed is in tiles per second; talkReach is how close (in tiles, feet to feet) you must be to talk to someone; pauses and walks are in game updates (60 a second), picked at random between the two numbers.",
  "standIn": "villager",
  "walkSpeed": 1.2,
  "pause": [60, 240],
  "walk": [20, 50],
  "animationFrameTime": 20,
  "talkReach": 1.5,
+ "disposition": { "friendly": 3, "neutral": 5, "wary": 2, "hostile": 0.3 },
+ "backdrops": { "floor": "indoors", "carpet": "castle", "ruin_floor": "ruin", "moss": "ruin", "default": "town" },
  "roles": {
-  "innkeeper": { "label": "INNKEEPER", "sprite": "npc_innkeeper" },
-  "merchant":  { "label": "MERCHANT",  "sprite": "npc_merchant" },
-  "healer":    { "label": "HEALER",    "sprite": "npc_healer" },
+  "innkeeper": { "label": "INNKEEPER", "sprite": "npc_innkeeper", "disposition": { "friendly": 6, "neutral": 3, "wary": 0, "hostile": 0 } },
+  "merchant":  { "label": "MERCHANT",  "sprite": "npc_merchant",  "disposition": { "friendly": 4, "neutral": 4, "wary": 1, "hostile": 0 } },
+  "healer":    { "label": "HEALER",    "sprite": "npc_healer",    "disposition": { "friendly": 6, "neutral": 3, "wary": 0, "hostile": 0 } },
   "elder":     { "label": "ELDER",     "sprite": "npc_elder" },
-  "guard":     { "label": "GUARD",     "sprite": "npc_guard" },
+  "guard":     { "label": "GUARD",     "sprite": "npc_guard",     "disposition": { "friendly": 1, "neutral": 4, "wary": 4, "hostile": 0.5 } },
   "villager":  { "label": "VILLAGER",  "sprite": "npc_villager" },
-  "child":     { "label": "CHILD",     "sprite": "npc_child" },
+  "child":     { "label": "CHILD",     "sprite": "npc_child",     "disposition": { "friendly": 6, "neutral": 2, "wary": 1, "hostile": 0 } },
   "farmer":    { "label": "FARMER",    "sprite": "npc_farmer" },
-  "noble":     { "label": "NOBLE",     "sprite": "npc_noble" },
-  "steward":   { "label": "QUEEN'S STEWARD", "sprite": "npc_steward" },
+  "noble":     { "label": "NOBLE",     "sprite": "npc_noble",     "disposition": { "friendly": 1, "neutral": 3, "wary": 4, "hostile": 1 } },
+  "steward":   { "label": "QUEEN'S STEWARD", "sprite": "npc_steward", "disposition": { "friendly": 0, "neutral": 1, "wary": 0, "hostile": 0 } },
   "explorer":  { "label": "EXPLORER",  "sprite": "npc_explorer" }
  }
 }

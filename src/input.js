@@ -1,18 +1,19 @@
 // input.js
-// Reads the player's controls: one stick for moving and one action button.
+// Reads the player's controls: one stick for moving, one action button, and a menu button.
 //
 // The same controls come from three places, all combined into one reading:
-//   - Keyboard: arrow keys or WASD to move, Space or Enter for action.
-//   - Gamepad: left stick or D-pad to move, the A button for action.
-//   - Touchscreen: the on-screen thumbstick and the red ACT button.
+//   - Keyboard: arrow keys or WASD to move, Space or Enter for action, Esc or Tab for the menu.
+//   - Gamepad: left stick or D-pad to move, the A button for action, Start for the menu.
+//   - Touchscreen: the on-screen thumbstick, the red ACT button and the small MENU button.
 import { setTouch } from './screen.js';
 
 const ACTION_KEYS = [' ', 'enter'];
-// Keys that would otherwise scroll the page while playing.
-const SCROLL_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '];
+const MENU_KEYS = ['escape', 'tab'];
+// Keys the browser would otherwise act on: scrolling the page, or Tab moving the focus.
+const BROWSER_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'tab'];
 
 // Gamepad button numbers in the standard browser layout.
-const PAD_A = 0, PAD_UP = 12, PAD_DOWN = 13, PAD_LEFT = 14, PAD_RIGHT = 15;
+const PAD_A = 0, PAD_START = 9, PAD_UP = 12, PAD_DOWN = 13, PAD_LEFT = 14, PAD_RIGHT = 15;
 // Stick movement smaller than this is ignored, so a worn stick doesn't drift.
 const PAD_DEAD_ZONE = 0.2;
 
@@ -31,9 +32,12 @@ const keyCommands = {};       // single-press commands such as the debug toggle,
 let actionPressed = false;
 // Whether the action button was held at the last reading, so holding it counts as one press.
 let actionWasHeld = false;
+// The same two things for the menu button.
+let menuPressed = false;
+let padMenuWasHeld = false;
 
 let thumbX = 0, thumbY = 0, touchActionHeld = false;    // touch controls
-let padX = 0, padY = 0, padActionHeld = false;          // gamepad
+let padX = 0, padY = 0, padActionHeld = false, padMenuHeld = false;   // gamepad
 
 /** Runs `command` once each time the key with this code is pressed, e.g. onKey('Backquote', ...). */
 export function onKey(code, command) {
@@ -41,8 +45,8 @@ export function onKey(code, command) {
 }
 
 /**
- * Returns the controls as of now: x and y from -1 to 1 for the stick, and `action`, which is
- * true only on the update when the action button was first pressed. Call this once per update.
+ * Returns the controls as of now: x and y from -1 to 1 for the stick, and `action` and `menu`,
+ * each true only on the update when that button was first pressed. Call this once per update.
  */
 export function readInput() {
   readGamepad();
@@ -57,7 +61,11 @@ export function readInput() {
   actionWasHeld = actionHeld;
   actionPressed = false;
 
-  return { x, y, action };
+  const menu = menuPressed || (padMenuHeld && !padMenuWasHeld);
+  padMenuWasHeld = padMenuHeld;
+  menuPressed = false;
+
+  return { x, y, action, menu };
 }
 
 /** Limits a number to the range min..max. */
@@ -74,7 +82,7 @@ function isKeyDown(...keys) {
 
 addEventListener('keydown', event => {
   const key = event.key.toLowerCase();
-  if (SCROLL_KEYS.includes(key)) event.preventDefault();
+  if (BROWSER_KEYS.includes(key)) event.preventDefault();
 
   const command = keyCommands[event.code];
   if (command) {
@@ -83,6 +91,7 @@ addEventListener('keydown', event => {
   }
 
   if (ACTION_KEYS.includes(key) && !event.repeat) actionPressed = true;
+  if (MENU_KEYS.includes(key) && !event.repeat) menuPressed = true;
   keysDown.add(key);
 });
 
@@ -94,11 +103,12 @@ addEventListener('blur', () => keysDown.clear());
 
 // ---- Gamepad ----
 
-/** Reads the first connected gamepad into padX, padY and padActionHeld. */
+/** Reads the first connected gamepad into padX, padY, padActionHeld and padMenuHeld. */
 function readGamepad() {
   padX = 0;
   padY = 0;
   padActionHeld = false;
+  padMenuHeld = false;
 
   let gamepads;
   try {
@@ -120,6 +130,7 @@ function readGamepad() {
   if (pressed(PAD_UP)) padY = -1;
   if (pressed(PAD_DOWN)) padY = 1;
   padActionHeld = pressed(PAD_A);
+  padMenuHeld = pressed(PAD_START);
 }
 
 // ---- Touch thumbstick ----
@@ -193,3 +204,14 @@ for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
 }
 // A long press would otherwise open the phone's context menu.
 actionButton.addEventListener('contextmenu', event => event.preventDefault());
+
+// ---- Touch menu button ----
+
+const menuButton = document.getElementById('menuBtn');
+menuButton.addEventListener('pointerdown', event => {
+  setTouch(true);
+  menuPressed = true;
+  event.preventDefault();
+});
+// A long press would otherwise open the phone's context menu.
+menuButton.addEventListener('contextmenu', event => event.preventDefault());

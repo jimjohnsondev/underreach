@@ -1,0 +1,148 @@
+{
+ "_note": "What people say. A placeholder starter set: rewrite freely. Where there's a list, one line is picked per person, the same each time. Markers filled in by the game: {name} the speaker, {role} what they do, {here} this place, {region} its region, {place} a real place in the world (hearing it teaches you that topic), {kind} what kind of place it is, {direction} and {distance} from here to it, {person:ROLE} the name of whoever has that role here (teaches you them as a topic; a line naming a role that isn't here is skipped), {person} the person asked about, {where} where they can be found. Wary people only say one sentence of a line: the first, or the second if the first just repeats the question ('{place}?'). Every rumor (topics.news.rumors) needs {place}, so it can be followed. rumorOdds: rumors favor places in the same region (that many times as likely) and nearby ones (a place distanceFalloff tiles away is half as likely as one next door). Only use characters the 3x5 font has: capitals, digits and . , ' ? ! : - + / ( ) $ #.",
+
+ "greetings": {
+  "friendly": ["WELL MET, TRAVELER!", "AH, A NEW FACE! WELCOME.", "GOOD DAY TO YOU, WAYFARER."],
+  "neutral":  ["YES?", "WHAT CAN I DO FOR YOU?", "GOOD DAY."],
+  "wary":     ["WHAT DO YOU WANT?", "MAKE IT QUICK.", "I DON'T KNOW YOU."],
+  "hostile":  ["I'VE NOTHING TO SAY TO YOU.", "GO AWAY.", "LEAVE ME BE."]
+ },
+ "roleGreetings": {
+  "innkeeper": ["WELCOME, WELCOME! A BED? A HOT MEAL?"],
+  "merchant":  ["COME, LOOK! FAIR PRICES, GOOD WARES."],
+  "healer":    ["ARE YOU HURT? COME, SIT."],
+  "guard":     ["MOVE ALONG, NOW. OR STATE YOUR BUSINESS."],
+  "child":     ["ARE YOU A REAL WAYFARER? WHERE'S YOUR MAP?"],
+  "steward":   ["THE QUEEN'S BUSINESS KEEPS ME BUSY. SPEAK."],
+  "explorer":  ["DON'T TOUCH ANYTHING. THESE STONES ARE OLD."]
+ },
+ "farewell": ["SAFE ROADS.", "FAREWELL.", "MIND THE WOLVES."],
+ "unknown": ["I CAN'T HELP YOU WITH THAT.", "NEVER HEARD OF IT.", "YOU'D HAVE TO ASK SOMEONE ELSE."],
+
+ "topics": {
+  "yourself": {
+   "label": "YOURSELF",
+   "byRole": {
+    "innkeeper": ["I'M {name}. I KEEP THE INN HERE. A WARM BED AND A HOT MEAL, IF YOU'VE THE MARKS."],
+    "merchant":  ["{name}, AT YOUR SERVICE. I BUY CHEAP AND SELL FAIR. MOSTLY FAIR."],
+    "healer":    ["I'M {name}. I MEND CUTS, SET BONES AND BREW TEA THAT TASTES OF MUD."],
+    "elder":     ["I'M {name}, ELDER OF {here}. I'VE SEEN MORE WINTERS THAN I CARE TO COUNT."],
+    "guard":     ["{name}. I KEEP THE PEACE. IT DOESN'T KEEP ITSELF."],
+    "villager":  ["I'M {name}. I LIVE HERE, LIKE MY MOTHER'S MOTHER DID.", "{name}. JUST A FACE IN THE STREET."],
+    "child":     ["I'M {name}! I'M GOING TO BE A WAYFARER TOO, ONE DAY."],
+    "farmer":    ["{name}. I GROW TURNIPS. THE TURNIPS GROW ME, SOME YEARS."],
+    "noble":     ["I AM {name} OF {here}. YOU MAY HAVE HEARD OF MY FAMILY. NO?"],
+    "steward":   ["I AM {name}, STEWARD TO THE QUEEN. HER WILL IS MY WORK."],
+    "explorer":  ["{name}. I MAP OLD PLACES BEFORE THEY FALL DOWN COMPLETELY."]
+   },
+   "default": ["I'M {name}."]
+  },
+  "here": {
+   "label": "THIS PLACE",
+   "byType": {
+    "capital":  ["THIS IS {here}, HEART OF THE REACH. THE QUEEN'S STEWARD, {person:steward}, HOLDS COURT IN THE CASTLE.",
+                 "{here}. EVERY ROAD IN GREENVALE ENDS HERE SOONER OR LATER."],
+    "town":     ["{here} IS QUIET ENOUGH. IF IT'S WISDOM YOU WANT, ASK OUR ELDER, {person:elder}.",
+                 "{here}? GOOD PEOPLE, BAD ROADS. {person:innkeeper} AT THE INN HEARS ALL THE NEWS.",
+                 "THIS IS {here}, IN {region}. IT'S NOT MUCH, BUT IT'S OURS."],
+    "ruin":     ["NOBODY KNOWS WHO BUILT THIS PLACE. THE STONES ARE OLDER THAN THE REACH.",
+                 "THEY CALL IT {here}. MIND THE FLOORS, SOME OF THEM ARE ONLY PRETENDING."],
+    "village":  ["{here} IS A HANDFUL OF HOUSES AND A LOT OF SKY."],
+    "default":  ["THIS IS {here}."]
+   }
+  },
+  "news": {
+   "label": "NEWS",
+   "rumors": {
+    "town":     ["THEY SAY {place} IS DOING WELL. A TOWN {direction}, {distance}.",
+                 "MY COUSIN MOVED TO {place}, {direction}. NEVER WRITES."],
+    "village":  ["THERE'S A VILLAGE CALLED {place} {direction}. QUIET FOLK.",
+                 "TRADERS PASS THROUGH {place}, {direction}, NOW AND THEN."],
+    "ruin":     ["I HEAR THERE'S A RUIN CALLED {place} {direction}. NOBODY GOES THERE.",
+                 "OLD STONES AT {place}, {direction}. THEY SAY LIGHTS MOVE THERE AT NIGHT."],
+    "cave":     ["THERE'S A CAVE, {place}, {direction}. COLD AIR COMES OUT OF IT IN SUMMER."],
+    "tower":    ["SOMEONE LIVES IN {place}, {direction}. NEVER COMES DOWN, THEY SAY."],
+    "landmark": ["IF YOU'RE ROAMING, CLIMB {place}, {direction}. YOU CAN SEE FOR MILES."],
+    "waystone": ["THERE'S A WAYSTONE, {place}, {direction}. TOUCH IT AND REST EASY."],
+    "capital":  ["ALL ROADS LEAD TO {place}, {direction}. THE QUEEN'S STEWARD IS THERE."],
+    "house":    ["THE {place} IS {direction}. THE CARTOGRAPHER DIED THIS SPRING, YOU KNOW."]
+   },
+   "nothing": ["NOTHING WORTH TELLING."]
+  }
+ },
+
+ "place": {
+  "here": ["{place}? YOU'RE STANDING IN IT."],
+  "byType": {
+   "town":     ["{place}? A TOWN {direction}, {distance}."],
+   "village":  ["{place}? A LITTLE VILLAGE {direction}, {distance}."],
+   "ruin":     ["{place}? OLD RUINS {direction}, {distance}. I WOULDN'T GO THERE."],
+   "cave":     ["{place}? A CAVE {direction}, {distance}. BRING A LIGHT."],
+   "tower":    ["{place}? A TOWER {direction}, {distance}."],
+   "landmark": ["{place}? YOU'LL SEE IT {direction}, {distance}. HARD TO MISS."],
+   "waystone": ["{place}? A WAYSTONE {direction}, {distance}."],
+   "capital":  ["{place}? THE CAPITAL. {direction}, {distance}."],
+   "house":    ["THE CARTOGRAPHER'S HOUSE? {direction}, {distance}."]
+  },
+  "default": ["{place}? {direction}, {distance}."]
+ },
+ "rumorOdds": { "sameRegion": 3, "distanceFalloff": 30 },
+ "directions": ["TO THE EAST", "TO THE SOUTHEAST", "TO THE SOUTH", "TO THE SOUTHWEST", "TO THE WEST", "TO THE NORTHWEST", "TO THE NORTH", "TO THE NORTHEAST"],
+ "otherRegion": "{direction}, IN {region}",
+ "distances": [
+  { "upTo": 20, "text": "NOT FAR" },
+  { "upTo": 60, "text": "SOME WAY OFF" },
+  { "text": "A LONG WAY OFF" }
+ ],
+
+ "person": {
+  "here": ["{person}? THE {role}. YOU'LL FIND THEM {where}.", "{person}? TRY {where}."],
+  "self": ["THAT'S ME!", "YOU'RE TALKING TO THEM."],
+  "elsewhere": ["{person}? NOT FROM HERE. TRY {place}, {direction}.", "{person}? I THINK THEY LIVE IN {place}."],
+  "unknown": ["I DON'T KNOW ANYONE BY THAT NAME."]
+ },
+ "where": {
+  "default":   "SOMEWHERE AROUND",
+  "innkeeper": "AT THE INN",
+  "merchant":  "AT THE MARKET",
+  "healer":    "AT THE HEALER'S HOUSE",
+  "elder":     "IN THE HALL",
+  "guard":     "BY THE GATE",
+  "villager":  "AROUND TOWN",
+  "child":     "PLAYING SOMEWHERE NEARBY",
+  "farmer":    "IN THE FIELDS",
+  "noble":     "IN THE CASTLE",
+  "steward":   "IN THE THRONE ROOM",
+  "explorer":  "DEEPER IN"
+ },
+
+ "show": {
+  "byItem": {
+   "broken_compass":       ["A COMPASS THAT POINTS NOWHERE. ODD THING TO CARRY."],
+   "cartographer_journal": ["THE CARTOGRAPHER'S? SHE WAS ALWAYS SCRIBBLING IN THAT."]
+  },
+  "default": ["I'VE NEVER SEEN THAT BEFORE.", "WHAT IS IT? NO, DON'T TELL ME."],
+  "nothing": "YOU HAVE NOTHING TO SHOW."
+ },
+
+ "journal": {
+  "visited": "YOU VISITED {place}.",
+  "discovered": "DISCOVERED {place}",
+  "you": "YOU"
+ },
+ "pack": {
+  "ate": "YOU EAT THE {food}.",
+  "ateAndHealed": "YOU EAT THE {food}. HP {hp}/{max}."
+ },
+
+ "shop": {
+  "welcome":     "WHAT'LL IT BE?",
+  "bought":      "THERE YOU GO.",
+  "noMoney":     "YOU CAN'T AFFORD THAT.",
+  "packFull":    "YOUR PACK IS FULL.",
+  "alreadyOwn":  "YOU ALREADY HAVE ONE.",
+  "healed":      "THERE. GOOD AS NEW.",
+  "alreadyWell": "YOU LOOK WELL ENOUGH TO ME.",
+  "slept":       "YOU SLEEP SOUNDLY AND WAKE REFRESHED."
+ }
+}
