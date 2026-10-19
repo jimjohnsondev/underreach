@@ -1,9 +1,11 @@
 {
- "_note": "Starting Wayfarer and movement tuning. walkSpeed is in tiles per second; walkFrameTicks is how many 60 Hz ticks each walk frame lasts.",
+ "_note": "Starting Wayfarer and movement tuning. walkSpeed is in tiles per second; walkFrameTicks is how many 60 Hz ticks each walk frame lasts. feet is the box that bumps into things (for the Wayfarer and townspeople), in pixels from the top-left of the 8x16 sprite: a narrower box makes one-tile gaps easier to walk through. nudge is how far (in pixels) he slides sideways into an opening when he walks straight into a wall next to one: x when walking up or down, y when walking left or right; 0 turns it off.",
  "hp": 26,
  "maxHp": 26,
  "level": 1,
  "marks": 12,
  "walkSpeed": 4.5,
- "walkFrameTicks": 6
+ "walkFrameTicks": 6,
+ "feet": { "x": 3, "y": 13, "w": 2, "h": 3 },
+ "nudge": { "x": 4, "y": 8 }
 }

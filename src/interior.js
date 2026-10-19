@@ -1,25 +1,41 @@
 // interior.js
-// Builds the inside of a location. Until milestone 3 brings hand-shaped templates, every
-// location is a single placeholder screen: a walled clearing with a gap in the bottom wall.
-// Walking out through the gap goes back to the world map. The look of each kind of location
-// (floor, wall, decorations) comes from data/locations.json.
+// Builds the inside of a location. Kinds of location with "templates" in data/locations.json
+// (towns, the capital, ruins) are built from one of those hand-drawn maps in data/templates/.
+// The rest are still a single placeholder screen: a walled clearing with a gap in the bottom
+// wall, whose floor, wall and decorations come from data/locations.json.
+// Either way, walking onto an exit tile goes back to the world map.
 import { makeRandom } from './gen/random.js';
+import { buildFromTemplate } from './gen/template.js';
+import { SCREEN_TILES_W, SCREEN_TILES_H } from './world.js';
 
-// One screen of play area, in tiles.
-const WIDTH = 20;
-const HEIGHT = 11;
+// The placeholder is exactly one screen.
+const WIDTH = SCREEN_TILES_W;
+const HEIGHT = SCREEN_TILES_H;
 // The gap in the bottom wall is two tiles wide, in the middle.
 const EXIT_LEFT = WIDTH / 2 - 1;
 const EXIT_RIGHT = WIDTH / 2;
 
 /**
- * Returns the grid for a location's inside, ready for createWorld(). The decorations are
- * placed with a random generator seeded from the world seed and the location, so a place
- * looks the same every time you go in.
+ * Returns the grid for a location's inside, ready for createWorld(), with the townspeople's spots
+ * in `npcs`. Random choices are seeded from the world seed and the location, so a place looks the
+ * same every time you go in. `templates` holds the loaded templates by name; `rules(tile)` gives
+ * a tile's rules from terrain.json.
  */
-export function buildInterior(location, locationType, worldSeed) {
-  const look = locationType.interior;
-  const random = makeRandom(`${worldSeed}-${location.id}`);
+export function buildInterior(location, locationType, worldSeed, templates, rules) {
+  const seed = `${worldSeed}-${location.id}`;
+  const name = location.short || location.label;
+
+  if (locationType.templates && locationType.templates.length) {
+    const choice = makeRandom(seed).pick(locationType.templates);
+    const grid = buildFromTemplate(templates[choice], rules, seed);
+    return { ...grid, name };
+  }
+  return buildPlaceholder(locationType.interior, seed, name);
+}
+
+/** Builds the one-screen placeholder used by kinds of location that have no template yet. */
+function buildPlaceholder(look, seed, name) {
+  const random = makeRandom(seed);
   const tiles = [];
 
   for (let y = 0; y < HEIGHT; y++) {
@@ -34,8 +50,9 @@ export function buildInterior(location, locationType, worldSeed) {
     tiles,
     // Everything stands on the floor, so a tree's see-through pixels show floor, not black.
     ground: tiles.map(() => look.floor),
-    name: location.short || location.label,
+    name,
     start: { x: EXIT_LEFT, y: HEIGHT - 2 },   // just inside the exit
+    npcs: [],
   };
 }
 

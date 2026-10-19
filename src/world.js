@@ -7,14 +7,18 @@
 export const TILE_W = 8;
 export const TILE_H = 16;
 
+// Size of one screen of map, in tiles: what the view below the status strip shows.
+export const SCREEN_TILES_W = 20;
+export const SCREEN_TILES_H = 11;
+
 // The tile used for anywhere off the edge of the map. It blocks walking, so the Wayfarer can't leave.
 const OFF_MAP_TILE = 'void';
 
 /**
  * Makes a world from a grid of tiles. `grid` has width, height, tiles (a flat list of tile names,
  * row by row) and start ({ x, y } in tiles). It can also have ground (the tile under each tile,
- * or null), region (a region number per tile) with regionNames, locations, and name (shown as
- * the region name everywhere on the map).
+ * or null), region (a region number per tile) with regionNames, locations, name (shown as
+ * the region name everywhere on the map) and camera ('follow' or 'flip').
  */
 export function createWorld(grid, terrain) {
   const { width, height, tiles } = grid;
@@ -73,6 +77,9 @@ export function createWorld(grid, terrain) {
     pixelHeight: height * TILE_H,
     start: grid.start,          // starting tile position, { x, y }
     seed: grid.seed,
+    // 'follow' scrolls smoothly with the Wayfarer, which every map does now; 'flip' jumps a whole
+    // screen at a time when he walks off the edge, Atari-style, if a location's template asks.
+    camera: grid.camera || 'follow',
     locations,
     tileAt,
     groundAt,

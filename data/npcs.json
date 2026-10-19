@@ -1,0 +1,22 @@
+{
+ "_note": "Townspeople. 'label' is shown in the status strip when you press action next to them (until conversation arrives in milestone 4). 'sprite' is their picture in art/sprites.json; a second frame named like 'npc_innkeeper_2' makes them animate. Until a role has its own sprite, 'standIn' is drawn instead. walkSpeed is in tiles per second; talkReach is how close (in tiles, feet to feet) you must be to talk to someone; pauses and walks are in game updates (60 a second), picked at random between the two numbers.",
+ "standIn": "villager",
+ "walkSpeed": 1.2,
+ "pause": [60, 240],
+ "walk": [20, 50],
+ "animationFrameTime": 20,
+ "talkReach": 1.5,
+ "roles": {
+  "innkeeper": { "label": "INNKEEPER", "sprite": "npc_innkeeper" },
+  "merchant":  { "label": "MERCHANT",  "sprite": "npc_merchant" },
+  "healer":    { "label": "HEALER",    "sprite": "npc_healer" },
+  "elder":     { "label": "ELDER",     "sprite": "npc_elder" },
+  "guard":     { "label": "GUARD",     "sprite": "npc_guard" },
+  "villager":  { "label": "VILLAGER",  "sprite": "npc_villager" },
+  "child":     { "label": "CHILD",     "sprite": "npc_child" },
+  "farmer":    { "label": "FARMER",    "sprite": "npc_farmer" },
+  "noble":     { "label": "NOBLE",     "sprite": "npc_noble" },
+  "steward":   { "label": "QUEEN'S STEWARD", "sprite": "npc_steward" },
+  "explorer":  { "label": "EXPLORER",  "sprite": "npc_explorer" }
+ }
+}

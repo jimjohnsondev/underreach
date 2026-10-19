@@ -14,7 +14,7 @@ const COLOR_STRIP = 'k';         // background
 const COLOR_STATS = 'U';         // HP and level
 const COLOR_MARKS = 'y';         // money
 const COLOR_PLACE = 'N';         // region or location name
-const COLOR_PROMPT = 'X';        // prompts like "ENTER TOWN?"
+const COLOR_PROMPT = 'X';        // messages that replace the strip, like a townsperson's role
 const COLOR_DEBUG = '9';         // debug overlay text
 
 /**

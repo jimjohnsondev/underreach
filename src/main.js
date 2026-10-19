@@ -3,8 +3,9 @@
 // draws every frame.
 //
 // The Wayfarer is always on one map: the world map, or the inside of a location he has entered.
-// The screen shows a one-tile status strip at the top above a 20x11-tile view of that map,
-// which scrolls to follow him.
+// The screen shows a one-tile status strip at the top above a 20x11-tile view of that map, which
+// scrolls to follow him. (A location's template can ask to flip a whole screen at a time instead,
+// Atari-style.) Inside a location, its townspeople go about their business.
 //
 // The seed comes from the address bar (?seed=1234). Without one, a random seed is picked and
 // put in the address bar, so reloading the page rebuilds the same world.
@@ -12,7 +13,10 @@ import { W, H, ctx, initScreen } from './screen.js';
 import { readInput, onKey } from './input.js';
 import { art, loadArt, loadJSON } from './art.js';
 import { createWorld, TILE_W, TILE_H } from './world.js';
-import { createPlayer, placePlayer, updatePlayer, drawPlayer, tileUnderFeet } from './player.js';
+import {
+  createPlayer, placePlayer, updatePlayer, drawPlayer, tileUnderFeet, feetBox, setFeetBox,
+} from './player.js';
+import { createNpcs, updateNpcs, npcObstacles, npcInReach, drawNpc } from './npcs.js';
 import { generateWorld } from './gen/generate.js';
 import { buildInterior } from './interior.js';
 import { renderStatusStrip, renderDebugOverlay } from './hud.js';
@@ -27,6 +31,10 @@ const VIEW_H = H - STRIP_H;      // ...and 11 tiles tall
 const UPDATES_PER_SECOND = 60;
 const ANIMATION_FRAME_TIME = 30; // animated tiles like water swap frames every half second
 const BLINK_TIME = 20;
+const MESSAGE_TIME = 150;        // a message in the status strip stays up for two and a half seconds
+
+// A stick push smaller than this (out of 1) counts as letting go.
+const STICK_RELEASED = 0.3;
 
 // New random seeds are kept to six digits so they're easy to read out and type.
 const MAX_RANDOM_SEED = 1000000;
@@ -35,6 +43,11 @@ let data;                        // everything loaded from data/
 let overworld;                   // the world map
 let world;                       // the map the Wayfarer is on now: the world map or an interior
 let insideLocation = null;       // the location he's inside, or null on the world map
+let npcs = [];                   // the townspeople of the location he's inside
+let message = null;              // a message in the status strip, if any: { text, timeLeft }
+// After walking into a location, he stands still until the stick is let go. Otherwise the
+// direction held to walk in would carry him straight onto the exit, just below where he appears.
+let waitForRelease = false;
 let player;
 let overview = null;             // the debug map overview image, made when first shown
 let updateCount = 0;             // game updates since the game started; drives animation
@@ -59,15 +72,21 @@ start();
 async function start() {
   initScreen();
   try {
-    const [, worldgen, locations, terrain, gear, stats] = await Promise.all([
+    const [, worldgen, locations, terrain, gear, stats, npcSettings] = await Promise.all([
       loadArt(),
       loadJSON('data/worldgen.json'),
       loadJSON('data/locations.json'),
       loadJSON('data/terrain.json'),
       loadJSON('data/gear.json'),
       loadJSON('data/player.json'),
+      loadJSON('data/npcs.json'),
     ]);
-    data = { worldgen, locationTypes: locations.types, terrain, gear: gear.gear };
+    data = {
+      worldgen, locationTypes: locations.types, terrain, gear: gear.gear, npcSettings,
+      templates: await loadTemplates(locations.types),
+    };
+    // Set the feet box first: it's shared by the Wayfarer and everyone else who walks.
+    setFeetBox(stats.feet);
     player = createPlayer(stats);
     startNewWorld(seedFromAddress() ?? randomSeed());
   } catch (error) {
@@ -75,6 +94,13 @@ async function start() {
     return;
   }
   runGameLoop();
+}
+
+/** Loads every template named in the location types, from data/templates/, keyed by name. */
+async function loadTemplates(locationTypes) {
+  const names = [...new Set(Object.values(locationTypes).flatMap(type => type.templates || []))];
+  const loaded = await Promise.all(names.map(name => loadJSON(`data/templates/${name}.json`)));
+  return Object.fromEntries(names.map((name, i) => [name, loaded[i]]));
 }
 
 /** Builds the world for a seed, puts the Wayfarer at its start and records the seed in the address bar. */
@@ -86,6 +112,8 @@ function startNewWorld(seed) {
   overworld = createWorld(grid, data.terrain);
   world = overworld;
   insideLocation = null;
+  npcs = [];
+  message = null;
   overview = null;
   placePlayer(player, overworld.start.x, overworld.start.y);
 
@@ -136,44 +164,65 @@ function runGameLoop() {
   requestAnimationFrame(frame);
 }
 
-/** Advances the game by one update: moves the Wayfarer, and enters or leaves locations. */
+/**
+ * Advances the game by one update: moves the Wayfarer and any townspeople, enters or leaves
+ * locations, and handles talking to someone.
+ */
 function update() {
   updateCount++;
   const input = readInput();
-  updatePlayer(player, input, world);
+  if (waitForRelease) {
+    if (Math.hypot(input.x, input.y) < STICK_RELEASED) waitForRelease = false;
+    else input.x = input.y = 0;
+  }
+  updateNpcs(npcs, world, player, data.npcSettings);
+  updatePlayer(player, input, world, npcObstacles(npcs));
+
+  if (message && --message.timeLeft <= 0) message = null;
 
   const { tx, ty } = tileUnderFeet(player);
   if (insideLocation) {
-    if (world.tileRules(world.tileAt(tx, ty)).exit) leaveLocation();
+    if (world.tileRules(world.tileAt(tx, ty)).exit) {
+      leaveLocation();
+      return;
+    }
+    // Talking comes in milestone 4; for now, show who this is.
+    const someone = input.action && npcInReach(npcs, player, data.npcSettings);
+    if (someone) showMessage(someone.label);
   } else {
+    // Walking onto a location takes him straight in.
     const here = world.locationAt(tx, ty);
-    if (here && input.action) enterLocation(here);
+    if (here) enterLocation(here);
   }
 }
 
-/** Takes the Wayfarer inside a location. */
+/** Shows a short message in the status strip for a couple of seconds. */
+function showMessage(text) {
+  message = { text, timeLeft: MESSAGE_TIME };
+}
+
+/** Takes the Wayfarer inside a location, and brings its townspeople out. */
 function enterLocation(here) {
   insideLocation = here;
-  const interior = buildInterior(here, data.locationTypes[here.type], overworld.seed);
+  const interior = buildInterior(here, data.locationTypes[here.type], overworld.seed, data.templates, overworld.tileRules);
   world = createWorld(interior, data.terrain);
+  npcs = createNpcs(interior.npcs, data.npcSettings);
+  message = null;
+  waitForRelease = true;
   placePlayer(player, world.start.x, world.start.y, 'up');
 }
 
-/** Takes the Wayfarer back out to the world map, standing on the location he just left. */
+/**
+ * Takes the Wayfarer back out to the world map, just below the location he left, facing away
+ * from it. (Standing on it would take him straight back in. The world generator makes sure the
+ * tile below every location is open ground.)
+ */
 function leaveLocation() {
   world = overworld;
-  placePlayer(player, insideLocation.x, insideLocation.y, 'down');
+  npcs = [];
+  message = null;
+  placePlayer(player, insideLocation.x, insideLocation.y + 1, 'down');
   insideLocation = null;
-}
-
-/** Returns the question shown when standing on a location, such as "ENTER TOWN?", or null. */
-function locationPrompt() {
-  if (insideLocation) return null;
-  const { tx, ty } = tileUnderFeet(player);
-  const here = world.locationAt(tx, ty);
-  if (!here) return null;
-  const verb = data.locationTypes[here.type].verb || 'ENTER';
-  return `${verb} ${here.label}?`;
 }
 
 /** Draws the whole screen. */
@@ -189,7 +238,7 @@ function render() {
     renderMap();
   }
 
-  renderStatusStrip(ctx, player, world.regionAt(tx, ty), locationPrompt());
+  renderStatusStrip(ctx, player, world.regionAt(tx, ty), message ? message.text : null);
   if (showDebug) renderDebugOverlay(ctx, debugLines(tx, ty));
 }
 
@@ -206,21 +255,30 @@ function debugLines(tx, ty) {
 }
 
 /**
- * Works out which part of the map to show: the view is centered on the Wayfarer, but stops at the
- * map's edges. Returns the view's top-left corner and the Wayfarer's position, both in whole pixels.
+ * Works out which part of the map to show. On a 'follow' map the view is centered on the
+ * Wayfarer; on a 'flip' map it's whichever whole screen his feet are on. Either way it stops at
+ * the map's edges. Returns the view's top-left corner and the Wayfarer's position, in whole pixels.
  */
 function getCamera() {
-  // Round the Wayfarer's position first and center on that, so he never jitters against the scenery.
+  // Round the Wayfarer's position first, so he never jitters against the scenery.
   const px = Math.round(player.x);
   const py = Math.round(player.y);
-  const centerX = px + TILE_W / 2;
-  const centerY = py + TILE_H / 2;
-  const viewX = clamp(centerX - VIEW_W / 2, 0, world.pixelWidth - VIEW_W);
-  const viewY = clamp(centerY - VIEW_H / 2, 0, world.pixelHeight - VIEW_H);
+  let viewX, viewY;
+  if (world.camera === 'flip') {
+    // He changes screen when the middle of his feet crosses the edge.
+    const feet = feetBox(px, py);
+    viewX = Math.floor((feet.x + feet.w / 2) / VIEW_W) * VIEW_W;
+    viewY = Math.floor((feet.y + feet.h / 2) / VIEW_H) * VIEW_H;
+  } else {
+    viewX = px + TILE_W / 2 - VIEW_W / 2;
+    viewY = py + TILE_H / 2 - VIEW_H / 2;
+  }
+  viewX = clamp(viewX, 0, world.pixelWidth - VIEW_W);
+  viewY = clamp(viewY, 0, world.pixelHeight - VIEW_H);
   return { viewX, viewY, px, py };
 }
 
-/** Draws the visible tiles and the Wayfarer in the area below the status strip. */
+/** Draws the visible tiles, the townspeople and the Wayfarer in the area below the status strip. */
 function renderMap() {
   const { viewX, viewY, px, py } = getCamera();
 
@@ -241,7 +299,13 @@ function renderMap() {
     }
   }
 
-  drawPlayer(ctx, player, px - viewX, STRIP_H + py - viewY);
+  // Draw people from the top of the screen down, so someone standing lower (nearer the viewer)
+  // overlaps whoever is behind them.
+  const people = [
+    ...npcs.map(npc => ({ y: npc.y, draw: () => drawNpc(ctx, npc, Math.round(npc.x) - viewX, STRIP_H + Math.round(npc.y) - viewY, data.npcSettings) })),
+    { y: py, draw: () => drawPlayer(ctx, player, px - viewX, STRIP_H + py - viewY) },
+  ];
+  people.sort((a, b) => a.y - b.y).forEach(person => person.draw());
   ctx.restore();
 }
 
@@ -258,9 +322,16 @@ function drawTile(tx, ty, x, y) {
   ctx.drawImage(tileImage(name), x, y);
 }
 
-/** Returns which picture a tile uses: its own, or another tile's if it has "image" in terrain.json. */
+/**
+ * Returns which picture a tile uses. A tile with "image" in terrain.json always uses that tile's
+ * picture. Otherwise it uses its own, or its "standIn" if it has no art yet (new tiles can be
+ * played with before they're drawn, and switch over as soon as art/tiles.json has them).
+ */
 function imageNameFor(tile) {
-  return world.tileRules(tile).image || tile;
+  const rules = world.tileRules(tile);
+  if (rules.image) return rules.image;
+  if (!art.tiles[tile] && rules.standIn) return rules.standIn;
+  return tile;
 }
 
 /** Returns the picture for an image name. Ones with a second frame like "water_2" swap between the two. */

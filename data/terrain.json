@@ -1,5 +1,5 @@
 {
- "_note": "What each tile does. 'blocks': nobody can walk on it. 'gate': blocks unless the Wayfarer has that gear (see data/gear.json). 'exit': stepping on it leaves a location. 'image': draw this tile's picture instead of its own. 'solid': the world generator can never put a road, trail or river through it. 'bridgeable': a road crossing it gets a bridge instead of a path.",
+ "_note": "What each tile does. 'blocks': nobody can walk on it. 'gate': blocks unless the Wayfarer has that gear (see data/gear.json). 'exit': stepping on it leaves a location. 'image': always draw this tile with another tile's picture. 'standIn': borrow this picture only until the tile has its own art in art/tiles.json. 'solid': the world generator can never put a road, trail or river through it. 'bridgeable': a road crossing it gets a bridge instead of a path.",
  "tiles": {
   "grass":       { "blocks": false },
   "grass_tufts": { "blocks": false },
@@ -33,6 +33,27 @@
   "tower":       { "blocks": false },
   "waystone":    { "blocks": false },
   "landmark":    { "blocks": false },
+
+  "cobbles":     { "blocks": false, "standIn": "path" },
+  "floor":       { "blocks": false, "standIn": "bridge" },
+  "door":        { "blocks": false, "standIn": "path" },
+  "garden":      { "blocks": false, "standIn": "wildflowers" },
+  "carpet":      { "blocks": false, "standIn": "sand" },
+  "wall":        { "blocks": true,  "standIn": "cliff" },
+  "castle_wall": { "blocks": true,  "standIn": "mountain" },
+  "counter":     { "blocks": true,  "standIn": "bridge_v" },
+  "fence":       { "blocks": true,  "standIn": "tree" },
+  "well":        { "blocks": true,  "standIn": "water" },
+  "stall":       { "blocks": true,  "standIn": "forest" },
+  "throne":      { "blocks": true,  "standIn": "forest" },
+
+  "ruin_floor":  { "blocks": false, "standIn": "salt" },
+  "moss":        { "blocks": false, "standIn": "grass_tufts" },
+  "stairs_down": { "blocks": false, "standIn": "cave" },
+  "ruin_wall":   { "blocks": true,  "standIn": "mountain" },
+  "rubble":      { "blocks": true,  "standIn": "hills" },
+  "pillar":      { "blocks": true,  "standIn": "cliff" },
+  "altar":       { "blocks": true,  "standIn": "dark_forest" },
 
   "exit":        { "blocks": false, "exit": true, "image": "path" }
  }

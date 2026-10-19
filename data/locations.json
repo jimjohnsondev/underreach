@@ -1,23 +1,23 @@
 {
- "_note": "Kinds of location on the world map. 'icon': the tile drawn on the map. 'label': the name shown when no special name is given. 'verb': the word in the prompt (default ENTER). 'road': true if roads lead to it. 'near': a tile it likes to be close to. 'interior': the placeholder map shown inside until milestone 3 brings real templates; 'decor' tiles are scattered over the floor.",
+ "_note": "Kinds of location on the world map. 'icon': the tile drawn on the map. 'label': the name shown when no special name is given. 'road': true if roads lead to it. 'near': a tile it likes to be close to. 'templates': the maps in data/templates/ to build the inside from (one is picked by the seed). Kinds without templates use 'interior', a one-screen placeholder; its 'decor' tiles are scattered over the floor.",
  "types": {
-  "capital":  { "icon": "capital",  "label": "CAPITAL",  "road": true,
+  "capital":  { "icon": "capital",  "label": "CAPITAL",  "road": true, "templates": ["capital"],
                 "interior": { "floor": "path", "wall": "mountain", "decor": [{ "tile": "tree", "chance": 0.04 }] } },
   "house":    { "icon": "house",    "label": "HOUSE",    "road": true,
                 "interior": { "floor": "path", "wall": "forest" } },
-  "town":     { "icon": "town",     "label": "TOWN",     "road": true,
+  "town":     { "icon": "town",     "label": "TOWN",     "road": true, "templates": ["town"],
                 "interior": { "floor": "path", "wall": "forest", "decor": [{ "tile": "tree", "chance": 0.04 }] } },
   "village":  { "icon": "village",  "label": "VILLAGE",  "road": true,
                 "interior": { "floor": "grass", "wall": "forest", "decor": [{ "tile": "grass_tufts", "chance": 0.2 }, { "tile": "tree", "chance": 0.04 }] } },
-  "ruin":     { "icon": "ruin",     "label": "RUIN",
+  "ruin":     { "icon": "ruin",     "label": "RUIN", "templates": ["ruin"],
                 "interior": { "floor": "grass", "wall": "mountain", "decor": [{ "tile": "grass_tufts", "chance": 0.15 }] } },
   "cave":     { "icon": "cave",     "label": "CAVE",     "near": "mountain",
                 "interior": { "floor": "path", "wall": "mountain" } },
   "tower":    { "icon": "tower",    "label": "TOWER",    "near": "hills",
                 "interior": { "floor": "path", "wall": "mountain" } },
-  "waystone": { "icon": "waystone", "label": "WAYSTONE", "verb": "TOUCH THE", "road": true,
+  "waystone": { "icon": "waystone", "label": "WAYSTONE", "road": true,
                 "interior": { "floor": "grass", "wall": "forest", "decor": [{ "tile": "wildflowers", "chance": 0.15 }] } },
-  "landmark": { "icon": "landmark", "label": "LANDMARK", "verb": "VISIT THE",
+  "landmark": { "icon": "landmark", "label": "LANDMARK",
                 "interior": { "floor": "grass", "wall": "forest", "decor": [{ "tile": "wildflowers", "chance": 0.1 }] } }
  }
 }
