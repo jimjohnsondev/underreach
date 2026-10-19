@@ -25,3 +25,8 @@ Things the design doc didn't pin down, and what was chosen. Change any of them f
 ## Phone layout
 
 - **Phones fill the screen.** The design doc asks for whole-device-pixel scaling, but on a phone that can waste a third of the width (a 412px-wide Android ended up with a 244px screen). On touch devices the bezel, side gutters and name plate are removed and the screen scales to fill the available width (portrait) or the space between the controls (landscape), even at a fractional scale. Desktop keeps the bezel and the crisp whole-pixel scaling. See `layout()` in `js/screen.js` and the `body.touch` rules in `css/style.css`.
+
+## Art tweaks
+
+- **Brighter single trees.** The `tree` tile's leaves used the same dark greens as `forest`, which are almost exactly the grass color, so lone trees disappeared into the map. The tree now has its own colors (palette keys `J`, `K`, `T` for the leaves and `Y` for the trunk): brighter than the grass and forest, still muted next to the Wayfarer and the enterable places. Those were the last four free letters in the palette; new colors can use symbols such as `@` or `%` as keys.
+- **Lighter forest.** Forest had the same problem, so its colors (`f`, `F`, `j`, used only by `forest`) were lightened too. The order from dark to bright is now: grass, forest, single trees, then the Wayfarer and enterable places.

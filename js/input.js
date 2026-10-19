@@ -1,90 +1,195 @@
-// One stick and one button, from keyboard, gamepad or the touch controls (same approach as the Myriapod reference).
+// input.js
+// Reads the player's controls: one stick for moving and one action button.
+//
+// The same controls come from three places, all combined into one reading:
+//   - Keyboard: arrow keys or WASD to move, Space or Enter for action.
+//   - Gamepad: left stick or D-pad to move, the A button for action.
+//   - Touchscreen: the on-screen thumbstick and the red ACT button.
 import { setTouch } from './screen.js';
 
-const $ = id => document.getElementById(id);
-const keys = new Set();
-const keyHandlers = {};   // one-shot keys such as the debug toggle, by KeyboardEvent.code
-
-let actionLatch = false;  // catches a press that starts and ends between two updates
-let actionWas = false;
-let joyX = 0, joyY = 0, actionTouch = false;
-let gpX = 0, gpY = 0, gpAction = false;
-
 const ACTION_KEYS = [' ', 'enter'];
+// Keys that would otherwise scroll the page while playing.
 const SCROLL_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '];
 
-export function onKey(code, fn) { keyHandlers[code] = fn; }
+// Gamepad button numbers in the standard browser layout.
+const PAD_A = 0, PAD_UP = 12, PAD_DOWN = 13, PAD_LEFT = 14, PAD_RIGHT = 15;
+// Stick movement smaller than this is ignored, so a worn stick doesn't drift.
+const PAD_DEAD_ZONE = 0.2;
 
-addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  if (SCROLL_KEYS.includes(k)) e.preventDefault();
-  if (keyHandlers[e.code]) { if (!e.repeat) keyHandlers[e.code](); return; }
-  if (!e.repeat && ACTION_KEYS.includes(k)) actionLatch = true;
-  keys.add(k);
-});
-addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
-// Otherwise a key held while the window loses focus stays "down" forever.
-addEventListener('blur', () => keys.clear());
+// How far the touch thumbstick must be pushed before it counts, as a fraction of full travel.
+const THUMB_DEAD_ZONE = 0.15;
+// How far from the center you drag to reach full travel, as a fraction of the pad's radius.
+const THUMB_REACH = 0.62;
+// How far the knob is drawn from the center at full travel, as a fraction of the pad's radius.
+const KNOB_TRAVEL = 0.42;
 
-const held = (...a) => a.some(x => keys.has(x));
+const keysDown = new Set();   // lower-case key names currently held
+const keyCommands = {};       // single-press commands such as the debug toggle, by key code
 
-function pollGamepad() {
-  gpX = gpY = 0; gpAction = false;
-  let list;
-  try { list = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { return; }
-  for (const g of list || []) {
-    if (!g) continue;
-    const ax = g.axes[0] || 0, ay = g.axes[1] || 0, b = g.buttons;
-    if (Math.abs(ax) > 0.2) gpX = ax;
-    if (Math.abs(ay) > 0.2) gpY = ay;
-    if (b[14] && b[14].pressed) gpX = -1;
-    if (b[15] && b[15].pressed) gpX = 1;
-    if (b[12] && b[12].pressed) gpY = -1;
-    if (b[13] && b[13].pressed) gpY = 1;
-    if (b[0] && b[0].pressed) gpAction = true;
-    break;
-  }
+// Set when the action button is pressed, and cleared when the game reads it. This catches a tap so
+// quick it starts and ends between two game updates.
+let actionPressed = false;
+// Whether the action button was held at the last reading, so holding it counts as one press.
+let actionWasHeld = false;
+
+let thumbX = 0, thumbY = 0, touchActionHeld = false;    // touch controls
+let padX = 0, padY = 0, padActionHeld = false;          // gamepad
+
+/** Runs `command` once each time the key with this code is pressed, e.g. onKey('Backquote', ...). */
+export function onKey(code, command) {
+  keyCommands[code] = command;
 }
 
-// Called once per update. Returns the raw stick (-1..1 each axis) and whether action was just pressed.
+/**
+ * Returns the controls as of now: x and y from -1 to 1 for the stick, and `action`, which is
+ * true only on the update when the action button was first pressed. Call this once per update.
+ */
 export function readInput() {
-  pollGamepad();
-  const x = (held('arrowright', 'd') ? 1 : 0) - (held('arrowleft', 'a') ? 1 : 0) + joyX + gpX;
-  const y = (held('arrowdown', 's') ? 1 : 0) - (held('arrowup', 'w') ? 1 : 0) + joyY + gpY;
-  const down = held(...ACTION_KEYS) || actionTouch || gpAction;
-  const action = actionLatch || (down && !actionWas);
-  actionWas = down;
-  actionLatch = false;
-  return { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)), action };
+  readGamepad();
+
+  const keyX = (isKeyDown('arrowright', 'd') ? 1 : 0) - (isKeyDown('arrowleft', 'a') ? 1 : 0);
+  const keyY = (isKeyDown('arrowdown', 's') ? 1 : 0) - (isKeyDown('arrowup', 'w') ? 1 : 0);
+  const x = clamp(keyX + thumbX + padX, -1, 1);
+  const y = clamp(keyY + thumbY + padY, -1, 1);
+
+  const actionHeld = isKeyDown(...ACTION_KEYS) || touchActionHeld || padActionHeld;
+  const action = actionPressed || (actionHeld && !actionWasHeld);
+  actionWasHeld = actionHeld;
+  actionPressed = false;
+
+  return { x, y, action };
 }
 
-// ---- touch thumbstick and action button ----
-const pad = $('pad'), knob = $('knob'), actBtn = $('actBtn');
-let padId = null;
-
-function padMove(e) {
-  const r = pad.getBoundingClientRect(), rad = r.width / 2;
-  let dx = (e.clientX - (r.left + rad)) / (rad * 0.62), dy = (e.clientY - (r.top + rad)) / (rad * 0.62);
-  const m = Math.hypot(dx, dy);
-  if (m > 1) { dx /= m; dy /= m; }
-  joyX = Math.abs(dx) < 0.15 ? 0 : dx;
-  joyY = Math.abs(dy) < 0.15 ? 0 : dy;
-  knob.style.transform = `translate(${dx * rad * 0.42}px,${dy * rad * 0.42}px)`;
+/** Limits a number to the range min..max. */
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
-pad.addEventListener('pointerdown', e => {
-  setTouch(true); padId = e.pointerId;
-  try { pad.setPointerCapture(e.pointerId); } catch (_) {}
-  padMove(e); e.preventDefault();
-});
-pad.addEventListener('pointermove', e => { if (e.pointerId === padId) padMove(e); });
-const padEnd = e => { if (e.pointerId !== padId) return; padId = null; joyX = joyY = 0; knob.style.transform = ''; };
-['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => pad.addEventListener(ev, padEnd));
 
-actBtn.addEventListener('pointerdown', e => {
-  setTouch(true); actionTouch = true; actionLatch = true; actBtn.classList.add('on');
-  try { actBtn.setPointerCapture(e.pointerId); } catch (_) {}
-  e.preventDefault();
+/** True if any of the given keys is being held. */
+function isKeyDown(...keys) {
+  return keys.some(k => keysDown.has(k));
+}
+
+// ---- Keyboard ----
+
+addEventListener('keydown', event => {
+  const key = event.key.toLowerCase();
+  if (SCROLL_KEYS.includes(key)) event.preventDefault();
+
+  const command = keyCommands[event.code];
+  if (command) {
+    if (!event.repeat) command();
+    return;
+  }
+
+  if (ACTION_KEYS.includes(key) && !event.repeat) actionPressed = true;
+  keysDown.add(key);
 });
-const actEnd = () => { actionTouch = false; actBtn.classList.remove('on'); };
-['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => actBtn.addEventListener(ev, actEnd));
-actBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+addEventListener('keyup', event => keysDown.delete(event.key.toLowerCase()));
+
+// If the window loses focus while a key is held, the browser never sends its keyup,
+// so forget every key to stop the player walking on by themselves.
+addEventListener('blur', () => keysDown.clear());
+
+// ---- Gamepad ----
+
+/** Reads the first connected gamepad into padX, padY and padActionHeld. */
+function readGamepad() {
+  padX = 0;
+  padY = 0;
+  padActionHeld = false;
+
+  let gamepads;
+  try {
+    gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  } catch (e) {
+    return;   // some browsers block gamepad access in certain contexts
+  }
+
+  const pad = [...(gamepads || [])].find(Boolean);
+  if (!pad) return;
+
+  const pressed = n => pad.buttons[n] && pad.buttons[n].pressed;
+  const stickX = pad.axes[0] || 0;
+  const stickY = pad.axes[1] || 0;
+  if (Math.abs(stickX) > PAD_DEAD_ZONE) padX = stickX;
+  if (Math.abs(stickY) > PAD_DEAD_ZONE) padY = stickY;
+  if (pressed(PAD_LEFT)) padX = -1;
+  if (pressed(PAD_RIGHT)) padX = 1;
+  if (pressed(PAD_UP)) padY = -1;
+  if (pressed(PAD_DOWN)) padY = 1;
+  padActionHeld = pressed(PAD_A);
+}
+
+// ---- Touch thumbstick ----
+
+const thumbPad = document.getElementById('pad');
+const knob = document.getElementById('knob');
+const actionButton = document.getElementById('actBtn');
+let thumbPointerId = null;   // the finger currently on the thumbstick
+
+/** Turns the finger's position on the thumbstick into thumbX and thumbY, and moves the knob to match. */
+function moveThumb(event) {
+  const box = thumbPad.getBoundingClientRect();
+  const radius = box.width / 2;
+  let dx = (event.clientX - (box.left + radius)) / (radius * THUMB_REACH);
+  let dy = (event.clientY - (box.top + radius)) / (radius * THUMB_REACH);
+
+  // Past full travel, keep the direction but cap the distance.
+  const distance = Math.hypot(dx, dy);
+  if (distance > 1) {
+    dx /= distance;
+    dy /= distance;
+  }
+
+  thumbX = Math.abs(dx) < THUMB_DEAD_ZONE ? 0 : dx;
+  thumbY = Math.abs(dy) < THUMB_DEAD_ZONE ? 0 : dy;
+  knob.style.transform = `translate(${dx * radius * KNOB_TRAVEL}px, ${dy * radius * KNOB_TRAVEL}px)`;
+}
+
+/** Lets go of the thumbstick when the finger that was holding it lifts. */
+function releaseThumb(event) {
+  if (event.pointerId !== thumbPointerId) return;
+  thumbPointerId = null;
+  thumbX = 0;
+  thumbY = 0;
+  knob.style.transform = '';
+}
+
+thumbPad.addEventListener('pointerdown', event => {
+  setTouch(true);
+  thumbPointerId = event.pointerId;
+  // Keep getting this finger's moves even if it slides off the pad.
+  try { thumbPad.setPointerCapture(event.pointerId); } catch (e) { /* not supported */ }
+  moveThumb(event);
+  event.preventDefault();
+});
+thumbPad.addEventListener('pointermove', event => {
+  if (event.pointerId === thumbPointerId) moveThumb(event);
+});
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  thumbPad.addEventListener(type, releaseThumb);
+}
+
+// ---- Touch action button ----
+
+/** Lets go of the action button. */
+function releaseActionButton() {
+  touchActionHeld = false;
+  actionButton.classList.remove('on');
+}
+
+actionButton.addEventListener('pointerdown', event => {
+  setTouch(true);
+  touchActionHeld = true;
+  actionPressed = true;
+  actionButton.classList.add('on');
+  try { actionButton.setPointerCapture(event.pointerId); } catch (e) { /* not supported */ }
+  event.preventDefault();
+});
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  actionButton.addEventListener(type, releaseActionButton);
+}
+// A long press would otherwise open the phone's context menu.
+actionButton.addEventListener('contextmenu', event => event.preventDefault());

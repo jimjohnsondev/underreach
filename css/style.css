@@ -1,5 +1,11 @@
-/* Layout copied from the Myriapod 800 reference: an integer-scaled 160x192 wide-pixel screen in a bezel,
-   centered on a dark dot-grid with a faded rainbow band behind it; touch controls below (portrait) or beside (landscape). */
+/* style.css
+   The page around the game: a dark backdrop with a faint dot grid and a faded rainbow band, the
+   game screen in a bezel in the middle, and on touchscreens the thumbstick and action button,
+   below the screen when the phone is upright and either side of it when it's sideways.
+   The screen's exact size is set by js/screen.js; this file only arranges things around it.
+   The look is copied from the Myriapod 800 reference game. */
+
+/* ---- Colors and page backdrop ---- */
 :root{
   --void:#0b0910; --void-2:#161220; --bezel:#1c1726; --bezel-2:#14111c; --edge:#2f2842;
   --ink:#ddd3ec; --dim:#7a6f90; --fire:#d8442a; --fire-deep:#7a1d10; --fire-ink:#ffe8d4;
@@ -30,6 +36,7 @@ body{
   height:36px; top:60%; pointer-events:none; opacity:.17; z-index:0;
   background:linear-gradient(to bottom,var(--r1) 0 16.66%,var(--r2) 16.66% 33.33%,var(--r3) 33.33% 50%,var(--r4) 50% 66.66%,var(--r5) 66.66% 83.33%,var(--r6) 83.33%);
 }
+/* ---- The screen in its bezel, and the keyboard hint underneath ---- */
 #screenCell{grid-area:screen; position:relative; z-index:1; min-width:0; min-height:0; display:grid; place-items:center; overflow:hidden}
 .bezel{
   display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:8px;
@@ -46,7 +53,7 @@ canvas{display:block; width:320px; height:192px; image-rendering:pixelated; imag
 .hint{grid-area:hint; margin:0; text-align:center; font-size:10px; letter-spacing:.14em; color:var(--dim); line-height:1.8; position:relative; z-index:1}
 .hint b{color:var(--ink); font-weight:400}
 
-/* touch controls */
+/* ---- Touch controls: shown only on touchscreens ---- */
 #ctl{display:none}
 body.touch .hint{display:none}
 body.touch #ctl{display:flex}
@@ -80,6 +87,7 @@ body.touch canvas{border-radius:0}
 #actBtn.on{transform:translateY(4px); box-shadow:0 2px 0 var(--fire-deep), 0 6px 14px rgba(0,0,0,.5)}
 button:focus-visible{outline:2px solid var(--r3); outline-offset:3px}
 
+/* ---- Where the touch controls go: below the screen upright, either side of it sideways ---- */
 body.touch.portrait #stage{grid-template-areas:"screen" "ctl"; --pad:clamp(110px,36vw,170px); --fireSz:clamp(84px,27vw,124px)}
 body.touch.portrait #ctl{grid-area:ctl; justify-content:space-between; align-items:center; width:100%; max-width:540px; justify-self:center; padding:0 16px 12px; box-sizing:border-box}
 body.touch.landscape #stage{
