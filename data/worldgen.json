@@ -1,0 +1,126 @@
+{
+ "_note": "Settings for building the world from a seed. Sizes are in tiles. Noise values are percentiles from 0 to 1. Elevation and moisture are ranked within each region, so a range like [0.74, 1] means 'the top 26% of this region'. In each region the first matching feature wins, otherwise the base tile is used, and decor is sprinkled over the base. A region's 'coast' list is picked from in stretches by the 'shore' noise layer; listing a tile twice makes it twice as common. A feature with 'minRun' must form at least that many tiles side by side, or those tiles become its 'shortRunTile' (useful for cliffs, which only look right as a wall). Labels shown in the status strip should be 17 characters or fewer; give a 'short' label if not. In 'placement', 'tries' is how many random spots are tried per location, after 'nearTries' a location stops insisting on being near its preferred tile, and 'nearDistance' is how many tiles counts as near.",
+
+ "width": 256,
+ "height": 160,
+
+ "noise": {
+  "elevation": { "scale": 22, "octaves": 4 },
+  "moisture":  { "scale": 16, "octaves": 3 },
+  "border":    { "scale": 12, "octaves": 2 },
+  "coast":     { "scale": 10, "octaves": 2 },
+  "shore":     { "scale": 6, "octaves": 1 }
+ },
+
+ "sea":      { "tile": "sea", "width": 6, "wobble": 3, "coastWidth": 1.5 },
+ "center":   { "radius": 0.36, "wobble": 0.08, "barrierWidth": 2, "sectorWobble": 0.5 },
+ "rivers":   { "tile": "water", "count": 5, "sourceElevation": 0.7, "meander": 0.5, "maxTurn": 1.0, "wideChance": 0.3, "maxLength": 300 },
+ "spacing":  { "locations": 7, "fromBarrier": 3 },
+ "placement": { "tries": 600, "nearTries": 400, "nearDistance": 3 },
+
+ "roadCost": {
+  "path": 0.5, "bridge": 0.5, "bridge_v": 0.5, "border_gate": 0.5,
+  "grass": 1, "grass_tufts": 1, "wildflowers": 1, "sand": 1.2, "salt": 1.2,
+  "hills": 2, "marsh": 2, "tree": 3, "forest": 4,
+  "deep_marsh": 5, "dark_forest": 5, "water": 8, "cliff": 12, "mountain": 15
+ },
+ "roadCostDefault": 3,
+ "trailCost": { "walkable": 1, "gated": 1.5, "blocked": 8 },
+
+ "crown": { "type": "ruin", "label": "HOLLOW CROWN", "hidden": true },
+
+ "regions": [
+  {
+   "id": "greenvale", "name": "GREENVALE", "center": true,
+   "base": "grass",
+   "features": [
+    { "tile": "water",  "moisture":  [0, 0.08] },
+    { "tile": "forest", "moisture":  [0.82, 1] },
+    { "tile": "hills",  "elevation": [0.7, 1] },
+    { "tile": "tree",   "chance": 0.03 }
+   ],
+   "decor": [ { "tile": "grass_tufts", "chance": 0.12 }, { "tile": "wildflowers", "chance": 0.05 } ],
+   "coast": ["sand"],
+   "required": [
+    { "type": "capital",  "label": "THE CAPITAL", "nearCenter": true },
+    { "type": "house",    "label": "CARTOGRAPHER'S HOUSE", "short": "CARTOGRAPHER" },
+    { "type": "waystone" }
+   ],
+   "filler": { "village": 3, "waystone": 1, "landmark": 1, "ruin": 1 }
+  },
+  {
+   "id": "fenmarch", "name": "FENMARCH",
+   "base": "marsh", "barrier": "deep_marsh",
+   "features": [
+    { "tile": "water",       "moisture":  [0.9, 1] },
+    { "tile": "deep_marsh",  "moisture":  [0.72, 1] },
+    { "tile": "grass",       "elevation": [0.64, 1] },
+    { "tile": "dark_forest", "elevation": [0, 0.16] },
+    { "tile": "tree",        "chance": 0.02 }
+   ],
+   "decor": [],
+   "coast": ["sand"],
+   "required": [
+    { "type": "town" },
+    { "type": "ruin", "label": "SUNKEN CHAPEL", "bearing": true },
+    { "type": "waystone" }
+   ],
+   "filler": { "village": 2, "ruin": 1, "cave": 1, "landmark": 1 }
+  },
+  {
+   "id": "highcairn", "name": "HIGHCAIRN",
+   "base": "grass", "barrier": "cliff",
+   "features": [
+    { "tile": "mountain", "elevation": [0.62, 1] },
+    { "tile": "cliff",    "elevation": [0.57, 1], "minRun": 3, "shortRunTile": "hills" },
+    { "tile": "hills",    "elevation": [0.42, 1] },
+    { "tile": "forest",   "moisture":  [0.74, 1] },
+    { "tile": "tree",     "chance": 0.03 }
+   ],
+   "decor": [ { "tile": "grass_tufts", "chance": 0.15 } ],
+   "coast": ["sand"],
+   "required": [
+    { "type": "town" },
+    { "type": "tower", "label": "MONASTERY", "bearing": true },
+    { "type": "waystone" }
+   ],
+   "filler": { "village": 2, "ruin": 2, "cave": 1, "landmark": 1 }
+  },
+  {
+   "id": "saltreach", "name": "SALTREACH",
+   "base": "sand", "barrier": "cliff",
+   "features": [
+    { "tile": "water",    "moisture":  [0.95, 1] },
+    { "tile": "mountain", "elevation": [0.8, 1] },
+    { "tile": "salt",     "moisture":  [0, 0.45] }
+   ],
+   "decor": [],
+   "coast": ["sand"],
+   "required": [
+    { "type": "town" },
+    { "type": "town", "label": "GLASS CITY", "bearing": true },
+    { "type": "waystone" }
+   ],
+   "filler": { "village": 2, "ruin": 1, "cave": 1, "landmark": 1 }
+  },
+  {
+   "id": "stormcoast", "name": "STORMCOAST",
+   "base": "grass", "barrier": "water",
+   "features": [
+    { "tile": "dark_forest", "moisture":  [0.84, 1] },
+    { "tile": "forest",      "moisture":  [0.7, 1] },
+    { "tile": "mountain",    "elevation": [0.84, 1] },
+    { "tile": "hills",       "elevation": [0.62, 1] },
+    { "tile": "tree",        "chance": 0.03 }
+   ],
+   "decor": [ { "tile": "grass_tufts", "chance": 0.15 } ],
+   "coast": ["cliff", "cliff", "sand"],
+   "required": [
+    { "type": "town" },
+    { "type": "tower", "label": "LIGHTHOUSE", "near": "sea", "bearing": true },
+    { "type": "waystone" }
+   ],
+   "filler": { "village": 2, "ruin": 1, "cave": 1, "landmark": 1 }
+  }
+ ]
+}

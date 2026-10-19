@@ -16,20 +16,30 @@ const FEET = { x: 2, y: 13, w: 4, h: 3 };
 const STICK_DEAD_ZONE = 0.3;
 
 /**
- * Creates the Wayfarer at the world's start position. `stats` comes from data/player.json and
- * includes HP, level, marks and the walking speed.
+ * Creates the Wayfarer. `stats` comes from data/player.json and includes HP, level, marks and
+ * the walking speed. Use placePlayer() to put him on a map.
  */
-export function createPlayer(stats, world) {
+export function createPlayer(stats) {
   return {
     ...stats,
     // Top-left corner of the sprite, in game pixels. These can be fractions, so slow speeds still
     // move smoothly; they're rounded only when drawing.
-    x: world.start.x * TILE_W,
-    y: world.start.y * TILE_H,
+    x: 0,
+    y: 0,
     facing: 'down',     // 'up', 'down', 'left' or 'right'
     walkFrame: 0,       // which of the two walking frames is showing: 0 or 1
     walkTimer: 0,       // updates since the walking frame last changed
+    gear: new Set(),    // gear names from data/gear.json, which open gated terrain
   };
+}
+
+/** Puts the Wayfarer standing on tile tx, ty, facing the given way. */
+export function placePlayer(player, tx, ty, facing = 'down') {
+  player.x = tx * TILE_W;
+  player.y = ty * TILE_H;
+  player.facing = facing;
+  player.walkFrame = 0;
+  player.walkTimer = 0;
 }
 
 /** Returns the tile position under the middle of the Wayfarer's feet: the tile he is standing on. */
@@ -60,8 +70,8 @@ export function updatePlayer(player, input, world) {
   const stepY = dirY * tilesPerUpdate * TILE_H;
 
   // Try each direction separately, so walking diagonally into a wall slides along it.
-  if (!feetBlocked(world, player.x + stepX, player.y)) player.x += stepX;
-  if (!feetBlocked(world, player.x, player.y + stepY)) player.y += stepY;
+  if (!feetBlocked(world, player.x + stepX, player.y, player.gear)) player.x += stepX;
+  if (!feetBlocked(world, player.x, player.y + stepY, player.gear)) player.y += stepY;
 
   player.facing = chooseFacing(player.facing, dirX, dirY);
 
@@ -101,7 +111,7 @@ function chooseFacing(current, dirX, dirY) {
 }
 
 /** True if the Wayfarer's feet would touch a blocking tile with his sprite's top-left at x, y. */
-function feetBlocked(world, x, y) {
+function feetBlocked(world, x, y, gear) {
   // The tiles under the feet box's left, right, top and bottom edges. The tiny nudge stops a box
   // that ends exactly on a tile edge from counting the next tile over.
   const left = Math.floor((x + FEET.x) / TILE_W);
@@ -111,7 +121,7 @@ function feetBlocked(world, x, y) {
 
   for (let ty = top; ty <= bottom; ty++) {
     for (let tx = left; tx <= right; tx++) {
-      if (world.blocks(tx, ty)) return true;
+      if (world.blocks(tx, ty, gear)) return true;
     }
   }
   return false;

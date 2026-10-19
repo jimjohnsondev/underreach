@@ -1,22 +1,39 @@
 {
- "_note": "What each tile does. 'blocks' stops the Wayfarer's feet. 'prompt' is shown in the status strip when the action button is pressed while standing on the tile.",
+ "_note": "What each tile does. 'blocks': nobody can walk on it. 'gate': blocks unless the Wayfarer has that gear (see data/gear.json). 'exit': stepping on it leaves a location. 'image': draw this tile's picture instead of its own. 'solid': the world generator can never put a road, trail or river through it. 'bridgeable': a road crossing it gets a bridge instead of a path.",
  "tiles": {
   "grass":       { "blocks": false },
   "grass_tufts": { "blocks": false },
   "wildflowers": { "blocks": false },
-  "tree":        { "blocks": true },
-  "forest":      { "blocks": true },
-  "water":       { "blocks": true },
   "path":        { "blocks": false },
   "bridge":      { "blocks": false },
-  "mountain":    { "blocks": true },
+  "bridge_v":    { "blocks": false },
   "hills":       { "blocks": false },
-  "marsh":       { "blocks": true },
   "sand":        { "blocks": false },
-  "town":        { "blocks": false, "prompt": "ENTER TOWN?" },
-  "ruin":        { "blocks": false, "prompt": "ENTER RUIN?" },
-  "cave":        { "blocks": false, "prompt": "ENTER CAVE?" },
-  "waystone":    { "blocks": false, "prompt": "TOUCH THE WAYSTONE?" },
-  "void":        { "blocks": true }
+  "salt":        { "blocks": false },
+  "marsh":       { "blocks": false },
+
+  "tree":        { "blocks": true },
+  "forest":      { "blocks": true },
+  "mountain":    { "blocks": true },
+  "sea":         { "blocks": true, "solid": true },
+  "void":        { "blocks": true, "solid": true },
+
+  "water":       { "blocks": false, "gate": "boat", "bridgeable": true },
+  "deep_marsh":  { "blocks": false, "gate": "boat" },
+  "cliff":       { "blocks": false, "gate": "hook" },
+  "dark_forest": { "blocks": false, "gate": "lantern" },
+  "border_gate": { "blocks": false, "gate": "seal" },
+
+  "capital":     { "blocks": false },
+  "house":       { "blocks": false },
+  "town":        { "blocks": false },
+  "village":     { "blocks": false },
+  "ruin":        { "blocks": false },
+  "cave":        { "blocks": false },
+  "tower":       { "blocks": false },
+  "waystone":    { "blocks": false },
+  "landmark":    { "blocks": false },
+
+  "exit":        { "blocks": false, "exit": true, "image": "path" }
  }
 }

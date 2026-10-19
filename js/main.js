@@ -1,38 +1,46 @@
 // main.js
-// Starts the game and runs it: loads the art and data, then updates and draws every frame.
+// Starts the game and runs it: loads the data, builds a world from a seed, then updates and
+// draws every frame.
 //
-// The screen is a one-tile status strip at the top (HP, level, marks, region name) above a
-// 20x11-tile view of the world that scrolls to follow the Wayfarer.
+// The Wayfarer is always on one map: the world map, or the inside of a location he has entered.
+// The screen shows a one-tile status strip at the top above a 20x11-tile view of that map,
+// which scrolls to follow him.
+//
+// The seed comes from the address bar (?seed=1234). Without one, a random seed is picked and
+// put in the address bar, so reloading the page rebuilds the same world.
 import { W, H, ctx, initScreen } from './screen.js';
 import { readInput, onKey } from './input.js';
-import { art, loadArt, loadJSON, drawText, textWidth } from './art.js';
-import { loadWorld, TILE_W, TILE_H } from './world.js';
-import { createPlayer, updatePlayer, drawPlayer, tileUnderFeet } from './player.js';
+import { art, loadArt, loadJSON } from './art.js';
+import { createWorld, TILE_W, TILE_H } from './world.js';
+import { createPlayer, placePlayer, updatePlayer, drawPlayer, tileUnderFeet } from './player.js';
+import { generateWorld } from './gen/generate.js';
+import { buildInterior } from './interior.js';
+import { renderStatusStrip, renderDebugOverlay } from './hud.js';
+import { makeOverview, drawOverview } from './overview.js';
 
 // Screen layout, in game pixels.
 const STRIP_H = TILE_H;          // the status strip is one tile tall
-const VIEW_W = W;                // the world view below it: 20 tiles wide...
+const VIEW_W = W;                // the map view below it: 20 tiles wide...
 const VIEW_H = H - STRIP_H;      // ...and 11 tiles tall
-const STRIP_TEXT_Y = 6;          // puts the 5-pixel-tall text in the middle of the strip
 
 // Timing, in game updates (60 per second).
 const UPDATES_PER_SECOND = 60;
-const WATER_FRAME_TIME = 30;     // water swaps between its two frames every half second
-const PROMPT_TIME = 150;         // an action prompt stays up for two and a half seconds
+const ANIMATION_FRAME_TIME = 30; // animated tiles like water swap frames every half second
+const BLINK_TIME = 20;
 
-// Status strip colors, as palette keys from art/palette.json.
-const COLOR_STRIP = 'k';         // background
-const COLOR_STATS = 'U';         // HP and level
-const COLOR_MARKS = 'y';         // money
-const COLOR_REGION = 'N';        // region name
-const COLOR_PROMPT = 'X';        // prompts like "ENTER TOWN?"
-const COLOR_DEBUG = '9';         // debug overlay text
+// New random seeds are kept to six digits so they're easy to read out and type.
+const MAX_RANDOM_SEED = 1000000;
 
-let world;
+let data;                        // everything loaded from data/
+let overworld;                   // the world map
+let world;                       // the map the Wayfarer is on now: the world map or an interior
+let insideLocation = null;       // the location he's inside, or null on the world map
 let player;
+let overview = null;             // the debug map overview image, made when first shown
 let updateCount = 0;             // game updates since the game started; drives animation
-let prompt = null;               // the prompt in the status strip, if any: { text, timeLeft, tx, ty }
+
 let showDebug = false;
+let showOverview = false;
 
 // Frames-per-second counter for the debug overlay.
 let fps = 0;
@@ -40,25 +48,67 @@ let framesThisSecond = 0;
 let fpsTimer = performance.now();
 
 onKey('Backquote', () => { showDebug = !showDebug; });
+// The other debug keys only work while the debug overlay is showing, so they can't be hit by accident.
+onKey('KeyN', () => { if (showDebug) startNewWorld(randomSeed()); });
+onKey('KeyG', () => { if (showDebug) toggleAllGear(); });
+onKey('KeyM', () => { if (showDebug) showOverview = !showOverview; });
 
 start();
 
-/** Sets up the screen, loads everything, then starts the game loop. */
+/** Sets up the screen, loads everything, builds the world, then starts the game loop. */
 async function start() {
   initScreen();
   try {
-    const [, loadedWorld, stats] = await Promise.all([
+    const [, worldgen, locations, terrain, gear, stats] = await Promise.all([
       loadArt(),
-      loadWorld('data/maps/test.json'),
+      loadJSON('data/worldgen.json'),
+      loadJSON('data/locations.json'),
+      loadJSON('data/terrain.json'),
+      loadJSON('data/gear.json'),
       loadJSON('data/player.json'),
     ]);
-    world = loadedWorld;
-    player = createPlayer(stats, world);
+    data = { worldgen, locationTypes: locations.types, terrain, gear: gear.gear };
+    player = createPlayer(stats);
+    startNewWorld(seedFromAddress() ?? randomSeed());
   } catch (error) {
     showLoadError(error);
     return;
   }
   runGameLoop();
+}
+
+/** Builds the world for a seed, puts the Wayfarer at its start and records the seed in the address bar. */
+function startNewWorld(seed) {
+  const startTime = performance.now();
+  const grid = generateWorld(seed, data);
+  console.log(`World ${grid.seed} built in ${Math.round(performance.now() - startTime)} ms`);
+
+  overworld = createWorld(grid, data.terrain);
+  world = overworld;
+  insideLocation = null;
+  overview = null;
+  placePlayer(player, overworld.start.x, overworld.start.y);
+
+  const url = new URL(window.location.href);
+  url.searchParams.set('seed', grid.seed);
+  history.replaceState(null, '', url);
+}
+
+/** Returns the seed from the address bar (?seed=...), or null if there isn't one. */
+function seedFromAddress() {
+  const seed = new URLSearchParams(window.location.search).get('seed');
+  return seed && seed.trim() ? seed : null;
+}
+
+/** Returns a new random seed. */
+function randomSeed() {
+  return Math.floor(Math.random() * MAX_RANDOM_SEED);
+}
+
+/** Debug: gives the Wayfarer every piece of gear, or takes it all away. */
+function toggleAllGear() {
+  if (player.gear.size) player.gear.clear();
+  else Object.keys(data.gear).forEach(name => player.gear.add(name));
 }
 
 /**
@@ -86,33 +136,73 @@ function runGameLoop() {
   requestAnimationFrame(frame);
 }
 
-/** Advances the game by one update: moves the Wayfarer and handles the action button. */
+/** Advances the game by one update: moves the Wayfarer, and enters or leaves locations. */
 function update() {
   updateCount++;
   const input = readInput();
   updatePlayer(player, input, world);
 
   const { tx, ty } = tileUnderFeet(player);
-
-  // Pressing action on a town, ruin, cave or waystone asks whether to go in.
-  if (input.action) {
-    const text = world.tileRules(world.tileAt(tx, ty)).prompt;
-    if (text) prompt = { text, timeLeft: PROMPT_TIME, tx, ty };
+  if (insideLocation) {
+    if (world.tileRules(world.tileAt(tx, ty)).exit) leaveLocation();
+  } else {
+    const here = world.locationAt(tx, ty);
+    if (here && input.action) enterLocation(here);
   }
+}
 
-  // The prompt goes away after a while, or as soon as the Wayfarer steps off that tile.
-  if (prompt) {
-    prompt.timeLeft--;
-    const steppedOff = prompt.tx !== tx || prompt.ty !== ty;
-    if (prompt.timeLeft <= 0 || steppedOff) prompt = null;
-  }
+/** Takes the Wayfarer inside a location. */
+function enterLocation(here) {
+  insideLocation = here;
+  const interior = buildInterior(here, data.locationTypes[here.type], overworld.seed);
+  world = createWorld(interior, data.terrain);
+  placePlayer(player, world.start.x, world.start.y, 'up');
+}
+
+/** Takes the Wayfarer back out to the world map, standing on the location he just left. */
+function leaveLocation() {
+  world = overworld;
+  placePlayer(player, insideLocation.x, insideLocation.y, 'down');
+  insideLocation = null;
+}
+
+/** Returns the question shown when standing on a location, such as "ENTER TOWN?", or null. */
+function locationPrompt() {
+  if (insideLocation) return null;
+  const { tx, ty } = tileUnderFeet(player);
+  const here = world.locationAt(tx, ty);
+  if (!here) return null;
+  const verb = data.locationTypes[here.type].verb || 'ENTER';
+  return `${verb} ${here.label}?`;
 }
 
 /** Draws the whole screen. */
 function render() {
-  renderWorld();
-  renderStatusStrip();
-  if (showDebug) renderDebugOverlay();
+  const { tx, ty } = tileUnderFeet(player);
+
+  if (showDebug && showOverview) {
+    overview ??= makeOverview(overworld);
+    const where = insideLocation ? { tx: insideLocation.x, ty: insideLocation.y } : { tx, ty };
+    const blinkOn = Math.floor(updateCount / BLINK_TIME) % 2 === 0;
+    drawOverview(ctx, overview, overworld, where, { x: 0, y: STRIP_H, w: VIEW_W, h: VIEW_H }, blinkOn);
+  } else {
+    renderMap();
+  }
+
+  renderStatusStrip(ctx, player, world.regionAt(tx, ty), locationPrompt());
+  if (showDebug) renderDebugOverlay(ctx, debugLines(tx, ty));
+}
+
+/** The lines shown in the debug overlay. */
+function debugLines(tx, ty) {
+  return [
+    `X ${tx} Y ${ty}`,
+    world.tileAt(tx, ty).replace(/_/g, ' '),   // the font has no underscore
+    `FPS ${fps}`,
+    `SEED ${overworld.seed}`,
+    `GEAR ${player.gear.size ? 'ALL' : 'NONE'}`,
+    'N NEW  G GEAR  M MAP',
+  ];
 }
 
 /**
@@ -131,7 +221,7 @@ function getCamera() {
 }
 
 /** Draws the visible tiles and the Wayfarer in the area below the status strip. */
-function renderWorld() {
+function renderMap() {
   const { viewX, viewY, px, py } = getCamera();
 
   // Clip to the view area so tiles scrolling past its top edge don't draw over the status strip.
@@ -147,8 +237,7 @@ function renderWorld() {
   const lastTy = firstTy + VIEW_H / TILE_H;
   for (let ty = firstTy; ty <= lastTy; ty++) {
     for (let tx = firstTx; tx <= lastTx; tx++) {
-      const image = tileImage(world.tileAt(tx, ty));
-      ctx.drawImage(image, tx * TILE_W - viewX, STRIP_H + ty * TILE_H - viewY);
+      drawTile(tx, ty, tx * TILE_W - viewX, STRIP_H + ty * TILE_H - viewY);
     }
   }
 
@@ -156,56 +245,29 @@ function renderWorld() {
   ctx.restore();
 }
 
-/** Returns the picture to draw for a tile, picking the right frame for animated water. */
-function tileImage(name) {
-  const waterSecondFrame = Math.floor(updateCount / WATER_FRAME_TIME) % 2 === 1;
-  if (name === 'water' && waterSecondFrame) return art.tiles.water_2;
-  return art.tiles[name] || art.tiles.void;
-}
-
 /**
- * Draws the status strip at the top: HP, level and marks on the left and the region name on the
- * right. While a prompt is showing, it replaces all of that.
+ * Draws map tile tx, ty at screen position x, y. A tile with see-through pixels (a village,
+ * a tree) gets the ground it stands on drawn first, so it doesn't sit on a black square.
  */
-function renderStatusStrip() {
-  const color = art.colors;
-  ctx.fillStyle = color[COLOR_STRIP];
-  ctx.fillRect(0, 0, W, STRIP_H);
-
-  if (prompt) {
-    const x = Math.round((W - textWidth(prompt.text)) / 2);
-    drawText(ctx, prompt.text, x, STRIP_TEXT_Y, color[COLOR_PROMPT]);
-    return;
+function drawTile(tx, ty, x, y) {
+  const name = imageNameFor(world.tileAt(tx, ty));
+  if (art.seeThroughTiles.has(name)) {
+    const ground = world.groundAt(tx, ty);
+    if (ground) ctx.drawImage(tileImage(imageNameFor(ground)), x, y);
   }
-
-  const stats = `HP ${player.hp}/${player.maxHp}  LV ${player.level}`;
-  const marks = `${player.marks} MK`;
-  const marksX = 2 + textWidth(stats + '  ') + 1;
-  drawText(ctx, stats, 2, STRIP_TEXT_Y, color[COLOR_STATS]);
-  drawText(ctx, marks, marksX, STRIP_TEXT_Y, color[COLOR_MARKS]);
-
-  const { tx, ty } = tileUnderFeet(player);
-  const region = world.regionAt(tx, ty);
-  drawText(ctx, region, W - 2 - textWidth(region), STRIP_TEXT_Y, color[COLOR_REGION]);
+  ctx.drawImage(tileImage(name), x, y);
 }
 
-/** Draws the debug box (toggled with the ` key): tile position, tile name and frames per second. */
-function renderDebugOverlay() {
-  const { tx, ty } = tileUnderFeet(player);
-  const lines = [
-    `X ${tx} Y ${ty}`,
-    world.tileAt(tx, ty).replace(/_/g, ' '),   // the font has no underscore
-    `FPS ${fps}`,
-  ];
-  const lineHeight = 6;
-  const boxW = Math.max(...lines.map(textWidth)) + 4;
-  const boxH = lines.length * lineHeight + 3;
+/** Returns which picture a tile uses: its own, or another tile's if it has "image" in terrain.json. */
+function imageNameFor(tile) {
+  return world.tileRules(tile).image || tile;
+}
 
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-  ctx.fillRect(0, STRIP_H, boxW, boxH);
-  lines.forEach((line, i) => {
-    drawText(ctx, line, 2, STRIP_H + 2 + i * lineHeight, art.colors[COLOR_DEBUG]);
-  });
+/** Returns the picture for an image name. Ones with a second frame like "water_2" swap between the two. */
+function tileImage(imageName) {
+  const secondFrame = Math.floor(updateCount / ANIMATION_FRAME_TIME) % 2 === 1;
+  if (secondFrame && art.tiles[`${imageName}_2`]) return art.tiles[`${imageName}_2`];
+  return art.tiles[imageName] || art.tiles.void;
 }
 
 /** Counts drawn frames and updates `fps` once a second. */

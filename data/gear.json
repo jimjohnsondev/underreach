@@ -1,0 +1,9 @@
+{
+ "_note": "Gear that opens gated terrain. The keys are the 'gate' names used in data/terrain.json. Nothing hands gear out yet; the debug overlay can toggle all of it.",
+ "gear": {
+  "hook":    "CLIMBING HOOK",
+  "boat":    "REED BOAT",
+  "lantern": "GLOWSTONE LANTERN",
+  "seal":    "WAYFARER'S SEAL"
+ }
+}

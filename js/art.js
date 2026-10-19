@@ -8,6 +8,7 @@
 export const art = {
   colors: {},    // palette key -> CSS color, e.g. 'g' -> '#1c3412'
   tiles: {},     // tile name -> 8x16 canvas
+  seeThroughTiles: new Set(),   // names of tiles with see-through pixels, drawn over their ground
   sprites: {},   // sprite name -> 8x16 canvas, including left-facing copies made by mirroring
   font: null,    // the 3x5 font data as loaded from font-3x5.json
 };
@@ -29,6 +30,7 @@ export async function loadArt() {
 
   for (const [name, rows] of Object.entries(tiles.tiles)) {
     art.tiles[name] = paintImage(rows);
+    if (rows.some(row => row.includes(TRANSPARENT))) art.seeThroughTiles.add(name);
   }
 
   for (const [name, rows] of Object.entries(sprites.sprites)) {
