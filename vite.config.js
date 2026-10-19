@@ -39,4 +39,18 @@ export default defineConfig({
   // Use relative paths so the build works from any folder on any host, e.g. yourname.github.io/underreach/.
   base: './',
   plugins: [reloadOnDataChange, copyDataToBuild],
+  build: {
+    // Put the bundled code in dist/js/ and the stylesheet in dist/css/, instead of Vite's
+    // single dist/assets/ folder. Anything else (none yet) still goes in dist/assets/.
+    rolldownOptions: {
+      output: {
+        entryFileNames: 'js/[name]-[hash].js',
+        chunkFileNames: 'js/[name]-[hash].js',
+        assetFileNames: asset => {
+          const isCss = (asset.names || []).some(name => name.endsWith('.css'));
+          return isCss ? 'css/[name]-[hash][extname]' : 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
+  },
 });

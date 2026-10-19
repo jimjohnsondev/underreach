@@ -43,7 +43,7 @@ Before reporting a bug, confirm it: trace the actual code path, and where possib
 
 ## How to report
 
-Start with one line on what you reviewed (for example "Uncommitted changes in js/player.js and data/player.json").
+Start with one line on what you reviewed (for example "Uncommitted changes in src/player.js and data/player.json").
 
 Then list findings, most serious first. For each:
 - **Where:** `path/to/file.js:line`

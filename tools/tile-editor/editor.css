@@ -1,0 +1,110 @@
+/* editor.css
+   Looks for the tile editor: the same dark backdrop and Silkscreen-style labels as the game's
+   page, laid out as three panels (list, pixel grid, palette and previews). */
+
+:root {
+  --void: #0b0910; --panel: #161220; --panel-2: #1c1726; --edge: #2f2842;
+  --ink: #ddd3ec; --dim: #7a6f90; --accent: #efb43a; --danger: #d8442a;
+  --font-ui: 'Courier New', ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; background: var(--void); color: var(--ink);
+  font: 13px var(--font-ui);
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.035) 1px, transparent 1.6px);
+  background-size: 6px 6px;
+}
+header {
+  display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+  border-bottom: 1px solid var(--edge); background: var(--panel);
+}
+h1 { margin: 0; font-size: 14px; letter-spacing: .14em; }
+h2 { margin: 6px 0; font-size: 13px; letter-spacing: .1em; color: var(--accent); }
+h3 { margin: 14px 0 6px; font-size: 11px; letter-spacing: .14em; color: var(--dim); }
+.status { color: var(--dim); flex: 1; }
+.status.dirty { color: var(--accent); }
+
+main {
+  display: grid; grid-template-columns: 240px min-content minmax(260px, 1fr);
+  gap: 16px; padding: 16px; align-items: start;
+}
+/* The middle panel is as wide as the grid and no wider, so text under the grid (like the
+   hover readout, which changes as the mouse moves) can't stretch it and shift the layout. */
+.edit-panel { width: min-content; }
+.edit-panel .hint { width: 320px; }
+.hover { height: 1.4em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel { background: var(--panel); border: 1px solid var(--edge); border-radius: 6px; padding: 12px; }
+
+/* On a narrow window, put the list above the grid and the palette below it. */
+@media (max-width: 900px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .item-list { max-height: 30vh; }
+  #grid { max-width: 100%; height: auto; }
+}
+
+button, input, select {
+  font: inherit; color: var(--ink); background: var(--panel-2);
+  border: 1px solid var(--edge); border-radius: 4px; padding: 5px 8px;
+}
+button { cursor: pointer; letter-spacing: .08em; }
+button:hover:not(:disabled) { border-color: var(--dim); }
+button:disabled { opacity: .4; cursor: default; }
+button.on { border-color: var(--accent); color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#saveBtn:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+.row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.toolbar { margin: 0 0 8px; }
+.spacer { flex: 1; }
+.hint { color: var(--dim); font-size: 11px; margin: 6px 0; }
+.check { display: flex; align-items: center; gap: 4px; color: var(--dim); }
+.field { display: grid; gap: 4px; margin-top: 10px; color: var(--dim); font-size: 11px; }
+
+/* List of tiles or sprites */
+.tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.tab { flex: 1; }
+#filter { width: 100%; margin-bottom: 8px; }
+.item-list {
+  list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow-y: auto;
+  display: grid; gap: 2px;
+}
+.item-list li {
+  display: flex; align-items: center; gap: 8px; padding: 3px 6px; border-radius: 4px; cursor: pointer;
+}
+.item-list li:hover { background: var(--panel-2); }
+.item-list li.on { background: var(--panel-2); outline: 1px solid var(--accent); }
+.item-list li.changed .name::after { content: ' *'; color: var(--accent); }
+/* Thumbnails are 8x16 pictures shown with 2:1 wide pixels, so they look square. */
+.item-list canvas { width: 32px; height: 32px; image-rendering: pixelated; background: #000; flex: none; }
+
+/* The pixel grid */
+#grid { display: block; background: #000; cursor: crosshair; touch-action: none; }
+
+/* Palette */
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 4px; }
+.swatch {
+  position: relative; height: 30px; border-radius: 3px; border: 2px solid transparent;
+  cursor: pointer; display: grid; place-items: center; font-size: 11px; font-weight: 700;
+  text-shadow: 0 0 2px #000, 0 0 2px #000;
+}
+.swatch.on { border-color: var(--accent); }
+.swatch.used::after {
+  content: ''; position: absolute; top: 2px; right: 2px; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 1px #000;
+}
+.swatch.clear {
+  background: repeating-conic-gradient(#333 0 25%, #222 0 50%) 0 0 / 10px 10px;
+}
+.add-color #newKey { width: 48px; text-align: center; }
+/* The color chooser used to change a swatch. It has to stay on the page (some browsers won't
+   open the chooser for a hidden input), so it's made tiny and invisible instead. */
+.offscreen { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.add-color #newColor { width: 44px; padding: 2px; height: 30px; }
+
+/* Previews, all with wide pixels */
+.previews { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.previews figure { margin: 0; text-align: center; color: var(--dim); font-size: 10px; }
+.previews canvas { display: block; image-rendering: pixelated; background: #000; margin-bottom: 4px; }
+#previewOne, #previewAnim, #previewMirror { width: 64px; height: 64px; }
+#previewTiled { width: 144px; height: 144px; }

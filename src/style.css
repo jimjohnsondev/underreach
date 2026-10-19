@@ -2,7 +2,7 @@
    The page around the game: a dark backdrop with a faint dot grid and a faded rainbow band, the
    game screen in a bezel in the middle, and on touchscreens the thumbstick and action button,
    below the screen when the phone is upright and either side of it when it's sideways.
-   The screen's exact size is set by js/screen.js; this file only arranges things around it.
+   The screen's exact size is set by src/screen.js; this file only arranges things around it.
    The look is copied from the Myriapod 800 reference game. */
 
 /* ---- Colors and page backdrop ---- */

@@ -28,6 +28,15 @@
         "8000"
       ],
       "port": 8000
+    },
+    {
+      "name": "underreach-editor",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "editor"
+      ],
+      "port": 5180
     }
   ]
 }
